@@ -37,7 +37,7 @@ This dashboard visualises those KPIs using a custom bullet chart, allows farmers
 
 | Layer      | Technology                                   |
 | ---------- | -------------------------------------------- |
-| Framework  | React 18 + TypeScript                        |
+| Framework  | React 19 + TypeScript                        |
 | Styling    | styled-components with CSS custom properties |
 | Backend    | Supabase (PostgreSQL + REST API)             |
 | Routing    | React Router v6                              |

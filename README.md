@@ -151,7 +151,7 @@ Plan value changes update local state immediately without waiting for the networ
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/kpi-dashboard.git
+git clone https://github.com/leomacode/kpi-dashboard.git
 cd kpi-dashboard
 npm install
 npm run dev

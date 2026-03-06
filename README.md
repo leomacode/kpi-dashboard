@@ -14,6 +14,18 @@ Live demo: [kpi-dashboard-six-theta.vercel.app](https://kpi-dashboard-six-theta.
 
 ---
 
+## Project Goals
+
+This project was built to demonstrate:
+
+- Custom data visualisation without chart libraries
+- Production-style testing (unit + component + E2E)
+- Performance-aware React architecture
+- Accessible UI patterns
+- Real backend integration with optimistic update patterns
+
+---
+
 ## Overview
 
 Farmers enrolled in sustainability programs need to track their performance across multiple KPIs — pasture access, nitrogen surplus, ammonia emissions, and more. Each KPI has a 5-tier scoring system (Aspirant → Bronze → Silver → Gold → Platinum) with directional logic (higher-is-better vs lower-is-better).
@@ -97,6 +109,28 @@ KPI data is owned in local state within `KPISection`, initialised from Supabase 
 **Mock data fallback**
 
 If Supabase is unreachable or not configured, the app falls back to static sample data. This ensures the app is always functional for anyone viewing the live demo without needing their own backend.
+
+---
+
+## Engineering Trade-offs
+
+### Why local state instead of global state management?
+
+The KPI data is owned by a single feature (`KPISection`) and does not need to be shared across unrelated parts of the application. Introducing a global state library such as Redux or Zustand would add unnecessary complexity and increase cognitive overhead for no practical gain.
+
+Keeping state local makes the data flow explicit and easier to reason about, while still supporting optimistic updates and refetch-based rollback on failure.
+
+### Why not use React Query or SWR?
+
+React Query would normally be a strong choice for server state management. In this case the application needs tight control over optimistic update behaviour and UI rollback logic. Implementing the data layer directly keeps the flow simple, transparent, and easy to follow — which matters for a portfolio project where readability is part of the goal.
+
+### Why SVG instead of Canvas for the chart marker?
+
+The bullet chart uses a small number of simple primitives (a diamond marker, a needle line) and benefits from DOM-level accessibility and CSS integration. SVG allows responsive layouts, easy styling with styled-components, and accessibility attributes without the additional complexity of canvas rendering or manual hit-testing.
+
+### Why styled-components instead of Tailwind or CSS Modules?
+
+The component library at Be Informed uses styled-components, which made it the natural choice for this portfolio project — it reflects real production experience rather than switching to a different tool for the sake of it. styled-components also keeps styles co-located with components, which suits a project where each component is self-contained.
 
 ---
 

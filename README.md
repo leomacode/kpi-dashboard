@@ -10,7 +10,7 @@ A sustainability KPI dashboard for agricultural farms, built as a portfolio proj
 
 ## Screenshot
 
-![Dashboard screenshot](./docs/Screenshot.png)
+![Dashboard screenshot](./public/Screenshot.png)
 
 ## Demo
 

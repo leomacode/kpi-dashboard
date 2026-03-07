@@ -101,6 +101,9 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
   const [selectedKpiId, setSelectedKpiId] = useState<string | null>(null);
   const [modalKey, setModalKey] = useState(0);
 
+  // Fetch KPIs from Supabase.
+  // If the backend is unavailable, fall back to mock data so the UI
+  // remains usable in demo environments.
   useEffect(() => {
     const fetchKpis = async () => {
       setLoading(true);

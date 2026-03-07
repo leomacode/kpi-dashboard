@@ -60,6 +60,8 @@ const normalizeDirectionality = (
   return null;
 };
 
+// Fallback: infer directionality from threshold order when the field is missing.
+// Descending thresholds (bronze ≥ silver ≥ gold ≥ platinum) indicate lower-is-better.
 const inferDirectionalityFromThresholds = (
   kpi: KPIViewModel,
   min: number,
@@ -105,12 +107,27 @@ const normalizeThresholds = (
   return { bronze, silver, gold, platinum };
 };
 
+/**
+ * Maps a KPI value to a visual position (0–100%) on the bullet chart.
+ *
+ * The chart uses a fixed 5-tier scale where each segment occupies exactly
+ * 20% of the bar width, regardless of numeric distance between thresholds.
+ * Position is calculated by: (1) finding which tier the value belongs to,
+ * (2) calculating how far into that tier it sits, then (3) mapping that
+ * onto the correct 20% block.
+ *
+ * For lower-is-better KPIs, fractionInSegment is inverted so that improvement
+ * always moves the needle rightward.
+ */
+
 export const getPositionInFixedTierSystem = (
   value: number,
   segments: readonly BulletChartSegment[],
   directionality: BulletChartDirectionality,
 ): number => {
   const TIER_WIDTH = 20;
+  // Prevents the needle from sitting exactly on a segment boundary,
+  // making it visually clear which tier the value belongs to
   const EDGE_PAD = 2;
 
   const tierOrder: Record<string, number> = {
@@ -121,6 +138,8 @@ export const getPositionInFixedTierSystem = (
     platinum: 4,
   };
 
+  // Ordered best → worst so we match the highest tier first
+  // when determining which segment contains the value
   const segMap = new Map(segments.map((s) => [s.key, s]));
   const tierKeys: BulletChartSegmentKey[] = [
     "platinum",
@@ -179,6 +198,8 @@ export const getPositionInFixedTierSystem = (
   if (range === 0) {
     fractionInSegment = 0.5;
   } else {
+    // Invert fraction for lower-is-better: a lower value within the tier
+    // should appear further right (closer to Platinum visually)
     const rawFraction = (value - lo) / range;
     fractionInSegment =
       directionality === "lower-is-better" ? 1 - rawFraction : rawFraction;

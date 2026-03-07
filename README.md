@@ -14,7 +14,7 @@ A sustainability KPI dashboard for agricultural farms, built as a portfolio proj
 
 ## Demo
 
-Live demo: [kpi-dashboard-six-theta.vercel.app](https://kpi-dashboard-six-theta.vercel.app)
+Live demo: <a href="https://kpi-dashboard-six-theta.vercel.app" target="_blank" rel="noopener noreferrer">kpi-dashboard-six-theta.vercel.app</a>
 
 > **No setup required to view the demo.** The app falls back to sample data automatically if Supabase is not configured. To enable plan value persistence, connect your own Supabase project using the setup instructions below.
 

@@ -49,7 +49,7 @@ This dashboard visualises those KPIs using a custom bullet chart, allows farmers
 
 | Layer      | Technology                                   |
 | ---------- | -------------------------------------------- |
-| Framework  | React 19 + TypeScript                        |
+| Framework  | React + TypeScript                           |
 | Styling    | styled-components with CSS custom properties |
 | Backend    | Supabase (PostgreSQL + REST API)             |
 | Routing    | React Router v6                              |
@@ -98,6 +98,17 @@ e2e/
 
 The bullet chart uses a fixed 5-tier visual system where each segment occupies exactly 20% of the bar width, regardless of the numeric distance between tier thresholds. This is a non-standard scale that doesn't map to any standard chart library abstraction. Building it directly gave full control over the positioning algorithm and avoided fighting library internals.
 
+**Bullet chart positioning algorithm**
+
+The marker position is computed in four steps:
+
+1. Determine which tier contains the KPI value
+2. Calculate the relative position within that tier
+3. Map that fraction onto the fixed 20% tier width
+4. Invert the fraction for lower-is-better KPIs, so improvement always moves the needle rightward
+
+This gives equal visual weight to each tier, making it easy to compare performance across KPIs regardless of how the numeric thresholds are distributed.
+
 **Optimistic updates**
 
 Plan value changes update the UI immediately without waiting for Supabase to confirm. If the server update fails, the UI rolls back by refetching the current server state. This is the same pattern used by tools like Linear and Notion.
@@ -119,10 +130,6 @@ If Supabase is unreachable or not configured, the app falls back to static sampl
 The KPI data is owned by a single feature (`KPISection`) and does not need to be shared across unrelated parts of the application. Introducing a global state library such as Redux or Zustand would add unnecessary complexity and increase cognitive overhead for no practical gain.
 
 Keeping state local makes the data flow explicit and easier to reason about, while still supporting optimistic updates and refetch-based rollback on failure.
-
-### Why not use React Query or SWR?
-
-React Query would normally be a strong choice for server state management. In this case the application needs tight control over optimistic update behaviour and UI rollback logic. Implementing the data layer directly keeps the flow simple, transparent, and easy to follow — which matters for a portfolio project where readability is part of the goal.
 
 ### Why SVG instead of Canvas for the chart marker?
 

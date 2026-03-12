@@ -6,62 +6,57 @@
 ![Lint](https://img.shields.io/badge/Lint-clean-22c55e?style=flat-square)
 ![Playwright](https://img.shields.io/badge/Playwright-51%20E2E%20tests-2563eb?style=flat-square)
 
-A sustainability KPI dashboard for agricultural farms, built as a portfolio project to demonstrate production-grade frontend engineering practices.
+A sustainability KPI dashboard for agricultural farms, built to demonstrate custom data visualisation, real backend integration, and production-grade frontend engineering.
+
+**Live demo:** <a href="https://kpi-dashboard-six-theta.vercel.app" target="_blank">kpi-dashboard-six-theta.vercel.app</a>
+
+> No setup required. The app falls back to sample data automatically if Supabase is not configured.
+
+---
+
+## Highlights
+
+- **Custom bullet chart** — built without a chart library, using a fixed 5-tier system where each tier always occupies 20% of the bar width
+- **Non-linear positioning algorithm** — handles both higher-is-better and lower-is-better KPIs, needle always moves rightward on improvement
+- **Optimistic updates** — plan value changes update the UI immediately with server rollback on failure
+- **90+ automated tests** — including 51 Playwright E2E tests across Chromium, Firefox, and WebKit
+- **Accessible modal** — keyboard navigation, focus trap, `role="dialog"`, `aria-modal`
+
+---
 
 ## Screenshot
 
 ![Dashboard screenshot](./public/Screenshot.png)
 
-## Demo
-
-Live demo: <a href="https://kpi-dashboard-six-theta.vercel.app" target="_blank" rel="noopener noreferrer">kpi-dashboard-six-theta.vercel.app</a>
-
-> **No setup required to view the demo.** The app falls back to sample data automatically if Supabase is not configured. To enable plan value persistence, connect your own Supabase project using the setup instructions below.
-
 ---
 
-## Project Goals
+## Tech Stack
 
-This project was built to demonstrate:
-
-- Custom data visualisation without chart libraries
-- Production-style testing (unit + component + E2E)
-- Performance-aware React architecture
-- Accessible UI patterns
-- Real backend integration with optimistic update patterns
+- **Frontend:** React, TypeScript
+- **Styling:** styled-components
+- **Backend:** Supabase (PostgreSQL + REST API)
+- **Routing:** React Router v6
+- **Testing:** Vitest, Testing Library, Playwright
+- **Build:** Vite
 
 ---
 
 ## Overview
 
-Farmers enrolled in sustainability programs need to track their performance across multiple KPIs — pasture access, nitrogen surplus, ammonia emissions, and more. Each KPI has a 5-tier scoring system (Aspirant → Bronze → Silver → Gold → Platinum) with directional logic (higher-is-better vs lower-is-better).
+Farmers enrolled in sustainability programs track performance across KPIs — pasture access, nitrogen surplus, ammonia emissions, and more. Each KPI has a 5-tier scoring system (Aspirant → Platinum) with directional logic (higher-is-better vs lower-is-better).
 
-This dashboard visualises those KPIs using a custom bullet chart, allows farmers to set target (plan) values, and persists changes to a real backend.
+The dashboard visualises those KPIs using a custom bullet chart, allows farmers to set target plan values, and persists changes to a real backend.
 
 ---
 
 ## Features
 
-- **Custom bullet chart visualisation** — built without a chart library. A fixed 5-tier positioning system where each segment represents equal visual width regardless of the numeric range between thresholds.
-- **Bidirectional KPI logic** — correctly handles both higher-is-better and lower-is-better KPIs, including needle and diamond marker positioning.
-- **Real backend** — data is fetched from and persisted to Supabase. Plan value changes use optimistic updates with server rollback on failure.
-- **Mock data fallback** — if Supabase is unavailable or not configured, the app falls back to sample data so it always works.
-- **Interactive modal** — click any KPI row to open a detail modal showing current tier, target value editor, threshold ranges, and explanation.
-- **Error boundary** — catches render errors and shows a recoverable fallback UI.
-
----
-
-## Tech Stack
-
-| Layer      | Technology                                   |
-| ---------- | -------------------------------------------- |
-| Framework  | React + TypeScript                           |
-| Styling    | styled-components with CSS custom properties |
-| Backend    | Supabase (PostgreSQL + REST API)             |
-| Routing    | React Router v6                              |
-| Unit tests | Vitest + Testing Library                     |
-| E2E tests  | Playwright (Chromium, Firefox, WebKit)       |
-| Build      | Vite                                         |
+- **Custom bullet chart** — fixed 5-tier visual system, each tier always 20% of bar width regardless of numeric range
+- **Bidirectional KPI logic** — correctly handles higher-is-better and lower-is-better KPIs
+- **Real backend** — Supabase integration with optimistic updates and rollback on failure
+- **Mock data fallback** — app always works without a configured backend
+- **Interactive modal** — detail view with tier, plan value editor, thresholds, and explanation
+- **Error boundary** — catches render errors and shows a recoverable fallback UI
 
 ---
 
@@ -85,7 +80,7 @@ src/
 │   ├── Tabs/
 │   └── ErrorBoundary.tsx
 ├── lib/
-│   └── supabase.ts                     # Supabase client
+│   └── supabase.ts
 └── test/
     ├── bulletChartRangeUtils.test.ts
     ├── mappers.test.ts
@@ -93,7 +88,7 @@ src/
     ├── BulletChartDetailModal.test.tsx
     └── ErrorBoundary.test.tsx
 e2e/
-└── kpi.spec.ts                         # Playwright E2E tests
+└── kpi.spec.ts
 ```
 
 ---
@@ -102,7 +97,7 @@ e2e/
 
 **Why no chart library?**
 
-The bullet chart uses a fixed 5-tier visual system where each segment occupies exactly 20% of the bar width, regardless of the numeric distance between tier thresholds. This is a non-standard scale that doesn't map to any standard chart library abstraction. Building it directly gave full control over the positioning algorithm and avoided fighting library internals.
+The bullet chart uses a fixed 5-tier visual system where each segment occupies exactly 20% of the bar width, regardless of numeric distance between thresholds. This non-standard scale doesn't map to any chart library abstraction — building it directly gave full control over the positioning algorithm.
 
 **Bullet chart positioning algorithm**
 
@@ -113,78 +108,49 @@ The marker position is computed in four steps:
 3. Map that fraction onto the fixed 20% tier width
 4. Invert the fraction for lower-is-better KPIs, so improvement always moves the needle rightward
 
-This gives equal visual weight to each tier, making it easy to compare performance across KPIs regardless of how the numeric thresholds are distributed.
-
 **Optimistic updates**
 
-Plan value changes update the UI immediately without waiting for Supabase to confirm. If the server update fails, the UI rolls back by refetching the current server state. This is the same pattern used by tools like Linear and Notion.
+Plan value changes update the UI immediately without waiting for Supabase to confirm. If the write fails, the UI rolls back by refetching server state — the same pattern used by Linear and Notion.
 
 **State ownership**
 
-KPI data is owned in local state within `KPISection`, initialised from Supabase on mount. The component treats its local state as the source of truth, updated on confirmed server responses.
-
-**Mock data fallback**
-
-If Supabase is unreachable or not configured, the app falls back to static sample data. This ensures the app is always functional for anyone viewing the live demo without needing their own backend.
+KPI data is owned in local state within `KPISection`. The component treats local state as source of truth, updated on confirmed server responses. No global state library needed — the data is not shared across unrelated parts of the app.
 
 ---
 
 ## Engineering Trade-offs
 
-### Why local state instead of global state management?
+**Local state vs global state**
 
-The KPI data is owned by a single feature (`KPISection`) and does not need to be shared across unrelated parts of the application. Introducing a global state library such as Redux or Zustand would add unnecessary complexity and increase cognitive overhead for no practical gain.
+The KPI data is owned by a single feature and not shared across the app. Introducing Redux or Zustand would add complexity for no practical gain. Local state keeps data flow explicit and easier to reason about.
 
-Keeping state local makes the data flow explicit and easier to reason about, while still supporting optimistic updates and refetch-based rollback on failure.
+**SVG vs Canvas for the chart marker**
 
-### Why SVG instead of Canvas for the chart marker?
+The chart uses simple primitives (diamond marker, needle line) that benefit from DOM-level accessibility and CSS integration. SVG allows responsive layouts, styled-components styling, and accessibility attributes without the overhead of canvas rendering.
 
-The bullet chart uses a small number of simple primitives (a diamond marker, a needle line) and benefits from DOM-level accessibility and CSS integration. SVG allows responsive layouts, easy styling with styled-components, and accessibility attributes without the additional complexity of canvas rendering or manual hit-testing.
+**styled-components vs Tailwind**
 
-### Why styled-components instead of Tailwind or CSS Modules?
-
-The component library at Be Informed uses styled-components, which made it the natural choice for this portfolio project — it reflects real production experience rather than switching to a different tool for the sake of it. styled-components also keeps styles co-located with components, which suits a project where each component is self-contained.
+styled-components reflects real production experience from Be Informed, keeps styles co-located with components, and suits a project where each component is self-contained.
 
 ---
 
 ## Performance
 
-**Small bundle footprint**
-
-No chart library dependencies. The visualisation is built entirely from styled div elements and lightweight SVG primitives, keeping the initial bundle size small and parse time low.
-
-**Memoised chart calculations**
-
-Bullet chart segment generation and needle positioning are computed inside `useMemo`, scoped to each `BulletChartRow`. Calculations only re-run when the KPI data changes, not on unrelated parent re-renders.
-
-```ts
-const { directionality, segments } = useMemo(
-  () => buildBulletChartRanges(kpi),
-  [kpi],
-);
-```
-
-**Isolated row components**
-
-Each KPI row is a standalone component. When a plan value changes, only the affected row and the modal re-render — the rest of the list is unaffected. This is particularly important for dashboards with many KPI rows.
-
-**Stable callbacks**
-
-Event handlers in `KPISection` are wrapped in `useCallback` with stable dependency arrays, preventing unnecessary re-renders of child components that receive them as props.
-
-**Optimistic updates**
-
-Plan value changes update local state immediately without waiting for the network. The UI stays responsive and the Supabase write happens in the background, with a rollback if it fails.
+- **No chart library** — visualisation built from styled divs and SVG primitives, keeping bundle size small
+- **Memoised calculations** — segment generation and needle positioning run inside `useMemo`, scoped per row
+- **Isolated row components** — plan value change only re-renders the affected row and modal
+- **Stable callbacks** — event handlers wrapped in `useCallback` to prevent unnecessary child re-renders
+- **Optimistic updates** — UI stays responsive while Supabase write happens in the background
 
 ---
 
 ## Accessibility
 
-- All interactive elements are native `<button>` elements with descriptive `aria-label` attributes — compatible with screen readers and keyboard navigation out of the box.
-- The detail modal uses `role="dialog"` and `aria-modal="true"` so assistive technologies correctly identify it as a modal context.
-- The modal traps focus via keyboard: `Escape` closes it, `Enter` confirms edits — no mouse required.
-- Directionality labels (↑ HIGHER IS BETTER / ↓ LOWER IS BETTER) are rendered with visible icons, so meaning is not lost without visual context.
-- Colour is not used as the sole means of conveying tier information — each tier has a text label in addition to its colour.
+- Interactive elements are native `<button>` elements with descriptive `aria-label` attributes
+- Detail modal uses `role="dialog"` and `aria-modal="true"`
+- Modal traps focus — `Escape` closes, `Enter` confirms, no mouse required
+- Tier information conveyed with both colour and text label — colour is never the sole indicator
+- Directionality labels rendered with visible text icons alongside colour
 
 ---
 
@@ -208,102 +174,32 @@ The app runs on sample data by default. No Supabase account needed.
 
 ### Connecting Supabase _(optional)_
 
-To enable plan value persistence, create a `.env` file in the project root:
+Create a `.env` file in the project root:
 
 ```
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-Then run the following SQL in your Supabase SQL editor to create and seed the table:
-
-```sql
--- Create table
-create table kpis (
-  id            text primary key,
-  name          text not null,
-  unit          text not null,
-  value         float8 not null,
-  plan_value    float8,
-  min           float8 not null default 0,
-  bronze        float8 not null,
-  silver        float8 not null,
-  gold          float8 not null,
-  platinum      float8 not null,
-  plateau_label text not null,
-  explanation   text not null,
-  directionality text not null
-);
-
--- Seed data
-insert into kpis values
-  ('kpi-1', 'Pasture Access', 'hrs/year', 2000, 1500, 0, 720, 900, 1440, 4000, 'Gold',
-   'Pasture access measures how many hours per year dairy cows spend outdoors. Higher values indicate better animal welfare and biodiversity outcomes.',
-   'higher-is-better'),
-  ('kpi-2', 'Bulk Milk Urea', 'mg/100mg', 17.5, 17, 0, 90, 20, 17, 5, 'Gold',
-   'Bulk milk urea reflects the protein and energy balance in the cow''s diet. Lower values indicate more efficient nitrogen utilisation and reduced environmental impact.',
-   'lower-is-better'),
-  ('kpi-3', 'Nitrogen Farm Surplus', 'kg/ha', 105.9, 160, 0, 399, 165, 100, -40, 'Silver',
-   'Farm nitrogen surplus is the difference between nitrogen inputs and outputs on the farm. Lower values indicate more efficient nitrogen use and less risk of environmental losses.',
-   'lower-is-better'),
-  ('kpi-4', 'Nitrogen Soil Surplus', 'kg N/ha', 57, 145, 0, 399, 150, 90, -20, 'Gold',
-   'Soil nitrogen surplus reflects how much nitrogen remains in the soil after crop uptake. Reducing this surplus helps prevent groundwater contamination.',
-   'lower-is-better'),
-  ('kpi-5', 'Ammonia Emissions', 'kg NH3/ha', 50.9, 50, 0, 399, 60, 45, 0, 'Silver',
-   'Ammonia emissions contribute to air pollution and nitrogen deposition in nature areas. Farms with lower emissions have better environmental performance.',
-   'lower-is-better'),
-  ('kpi-6', 'Species-Rich Grassland', '%', 18.4, 40, 0, 0, 10, 20, 60, 'Gold',
-   'The percentage of species-rich grassland on the farm. Higher values indicate greater biodiversity and a healthier ecosystem.',
-   'higher-is-better'),
-  ('kpi-7', 'Nature Management Area', '%', 5.8, 4, 0, 0, 2.5, 10, 20, 'Silver',
-   'The share of farmland under formal nature management agreements. Higher values show a stronger commitment to landscape and biodiversity conservation.',
-   'higher-is-better');
-
--- Enable Row Level Security
-alter table kpis enable row level security;
-create policy "Allow public read" on kpis for select using (true);
-create policy "Allow public update" on kpis for update using (true);
-```
+Then run the schema and seed data in your Supabase SQL editor. See [`supabase/schema.sql`](./supabase/schema.sql).
 
 ---
 
 ## Testing
 
-### Unit + component tests
-
 ```bash
-npm run test
+npm run test          # Unit + component tests
+npx playwright test   # 51 E2E tests across Chromium, Firefox, WebKit
 ```
 
-Covers:
-
-- `bulletChartRangeUtils` — tier calculation, needle positioning, segment generation
-- `mappers` — Supabase snake_case to camelCase transformation
-- `BulletChartRow` — rendering, directionality labels, click interaction
-- `BulletChartDetailModal` — editing flow, keyboard shortcuts, close behaviour
-- `ErrorBoundary` — error catching, fallback UI, retry
-
-### E2E tests
-
-```bash
-npx playwright test
-```
-
-51 tests across Chromium, Firefox and WebKit covering:
-
-- Page load and KPI row rendering
-- Modal open/close (click, keyboard, overlay)
-- Plan value editing and persistence
-- Cross-browser behaviour
+Unit tests cover: `bulletChartRangeUtils`, `mappers`, `BulletChartRow`, `BulletChartDetailModal`, `ErrorBoundary`.
 
 ---
 
 ## Code Quality
 
 ```bash
-npm run typecheck   # TypeScript — zero type errors
-npm run lint        # ESLint — zero warnings
+npm run typecheck   # Zero type errors
+npm run lint        # Zero warnings
 npm run build       # Production build
 ```
-
-All three pass with zero errors or warnings.

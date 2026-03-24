@@ -99,7 +99,6 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
   const [kpis, setKpis] = useState<KPIViewModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedKpiId, setSelectedKpiId] = useState<string | null>(null);
-  const [modalKey, setModalKey] = useState(0);
 
   // Fetch KPIs from Supabase.
   // If the backend is unavailable, fall back to mock data so the UI
@@ -133,7 +132,6 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
 
   const handleOpen = useCallback((kpiId: string) => {
     setSelectedKpiId(kpiId);
-    setModalKey((k) => k + 1);
   }, []);
 
   const handleClose = useCallback(() => setSelectedKpiId(null), []);
@@ -200,7 +198,7 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
 
       {selectedKpi && (
         <BulletChartDetailModal
-          key={`${selectedKpi.id}-${modalKey}`}
+          key={`${selectedKpi.id}`}
           kpi={selectedKpi}
           onClose={handleClose}
           onPlanValueChange={(value) =>

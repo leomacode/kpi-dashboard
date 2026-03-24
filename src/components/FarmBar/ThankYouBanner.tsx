@@ -55,4 +55,7 @@ const ThankYouBanner = () => (
     </InnerBanner>
   </OuterCard>
 );
+
+ThankYouBanner.displayName = "ThankYouBanner";
+
 export default ThankYouBanner;

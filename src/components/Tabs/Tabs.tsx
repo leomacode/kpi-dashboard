@@ -91,4 +91,6 @@ const NavigationTabs = ({ items }: Props) => (
   </StyledListWrapper>
 );
 
+NavigationTabs.displayName = "NavigationTabs";
+
 export default NavigationTabs;

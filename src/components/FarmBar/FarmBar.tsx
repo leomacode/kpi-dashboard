@@ -87,4 +87,6 @@ const FarmBar = ({ farm = DEFAULT_FARM, showBanner = true }: Props) => (
   </>
 );
 
+FarmBar.displayName = "FarmBar";
+
 export default FarmBar;

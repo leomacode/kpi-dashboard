@@ -83,4 +83,6 @@ const Brand = ({
   </StyledLabel>
 );
 
+Brand.displayName = "Brand";
+
 export default Brand;

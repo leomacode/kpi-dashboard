@@ -43,4 +43,6 @@ const BulletChartMarker = ({ style, ...rest }: Props) => (
   </StyledMarkerRoot>
 );
 
+BulletChartMarker.displayName = "BulletChartMarker";
+
 export default BulletChartMarker;

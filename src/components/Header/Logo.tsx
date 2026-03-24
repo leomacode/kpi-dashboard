@@ -8,4 +8,6 @@ const Logo = () => (
   </svg>
 );
 
+Logo.displayName = "Logo";
+
 export default Logo;

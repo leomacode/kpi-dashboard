@@ -138,4 +138,6 @@ const SyncStatusIndicator = ({
   );
 };
 
+SyncStatusIndicator.displayName = "SyncStatusIndicator";
+
 export default SyncStatusIndicator;

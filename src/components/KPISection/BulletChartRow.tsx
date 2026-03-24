@@ -256,4 +256,5 @@ const BulletChartRow = ({ kpi, onClick }: Props) => {
   );
 };
 
+BulletChartRow.displayName = "BulletChartRow";
 export default BulletChartRow;

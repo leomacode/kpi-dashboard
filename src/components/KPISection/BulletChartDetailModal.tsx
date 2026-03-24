@@ -480,3 +480,5 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
 };
 
 export default BulletChartDetailModal;
+
+BulletChartDetailModal.displayName = "BulletChartDetailModal";

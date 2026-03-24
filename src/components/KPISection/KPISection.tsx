@@ -210,4 +210,5 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
   );
 };
 
+KPISection.displayName = "KPISection";
 export default KPISection;

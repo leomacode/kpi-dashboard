@@ -30,7 +30,7 @@ const StyledHeaderTop = styled.div`
   gap: 1.5rem;
 `;
 
-const StyledHeading = styled.h1`
+const StyledHeading = styled.h2`
   margin: 0 0 0.25rem 0;
   font-size: 1rem;
   font-weight: 600;

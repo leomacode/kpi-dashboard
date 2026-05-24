@@ -14,10 +14,19 @@ const StyledLabel = styled.a`
   gap: 1.5rem;
   text-decoration: none;
   white-space: nowrap;
+  border-radius: var(--radius-md);
 
-  &:focus,
   &:hover {
     text-decoration: none;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
   }
 `;
 

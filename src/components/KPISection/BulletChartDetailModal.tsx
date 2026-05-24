@@ -1,4 +1,11 @@
-import { useMemo, useCallback, useEffect, useState } from "react";
+import {
+  useMemo,
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+  useId,
+} from "react";
 import styled, { css } from "styled-components";
 import type { KPIViewModel } from "./types";
 import {
@@ -318,6 +325,9 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
   const currentTier = useMemo(() => getTierMetaByValue(kpi), [kpi]);
   const { segments } = useMemo(() => buildBulletChartRanges(kpi), [kpi]);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
   const [isEditing, setIsEditing] = useState(false);
 
   // inputValue is a LOCAL draft — only used while editing.
@@ -360,6 +370,56 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
     return () => document.removeEventListener("keydown", handleEsc);
   }, [onClose, isEditing, handleCancel]);
 
+  // Focus trap, initial focus, and body-scroll lock — invariant: while the
+  // dialog is mounted, Tab/Shift+Tab cannot escape it and the page beneath
+  // does not scroll. Effect runs once on mount and tears down on unmount.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const prevBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const getFocusable = (): HTMLElement[] =>
+      Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+
+    (getFocusable()[0] ?? dialog).focus();
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const focusables = getFocusable();
+      if (focusables.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey) {
+        if (active === first || !dialog.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    dialog.addEventListener("keydown", handleTab);
+    return () => {
+      dialog.removeEventListener("keydown", handleTab);
+      document.body.style.overflow = prevBodyOverflow;
+      previouslyFocused?.focus?.();
+    };
+  }, []);
+
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
       if (e.target === e.currentTarget) onClose();
@@ -368,10 +428,17 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
   );
 
   return (
-    <StyledOverlay role="dialog" aria-modal="true" onClick={handleOverlayClick}>
+    <StyledOverlay
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      tabIndex={-1}
+      onClick={handleOverlayClick}
+    >
       <StyledModal>
         <StyledModalHeader>
-          <StyledModalTitle>{kpi.name}</StyledModalTitle>
+          <StyledModalTitle id={titleId}>{kpi.name}</StyledModalTitle>
           <StyledCloseBtn type="button" onClick={onClose} aria-label="Close">
             ×
           </StyledCloseBtn>
@@ -412,6 +479,7 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
+                    // eslint-disable-next-line jsx-a11y/no-autofocus -- input is only rendered when user clicks Edit; auto-focusing the input is the expected interaction inside the open dialog
                     autoFocus
                     placeholder="Enter value"
                   />

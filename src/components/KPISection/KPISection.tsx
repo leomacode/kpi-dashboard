@@ -107,12 +107,20 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
     const fetchKpis = async () => {
       setLoading(true);
 
+      // No Supabase env configured (CI without secrets, public demo, etc.)
+      // — skip the network round-trip and render mock data immediately.
+      if (!supabase) {
+        setKpis(mockKpis);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("kpis")
         .select("*")
         .order("id");
 
-      // Fall back to mock data if Supabase is unavailable or not configured
+      // Fall back to mock data if Supabase query fails or returns nothing
       if (error || !data || data.length === 0) {
         setKpis(mockKpis);
       } else {
@@ -138,10 +146,14 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
 
   const handlePlanValueChange = useCallback(
     async (kpiId: string, value: number | null) => {
-      // Optimistic update
+      // Optimistic update — applied to local state regardless of backend
       setKpis((prev) =>
         prev.map((k) => (k.id === kpiId ? { ...k, planValue: value } : k)),
       );
+
+      // In mock-only mode there's nothing to persist; the local optimistic
+      // update is the source of truth for the session.
+      if (!supabase) return;
 
       // Persist to Supabase
       const { error } = await supabase

@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { Link } from "react-router-dom";
 import Logo from "./Logo";
 
 type Props = {
@@ -8,7 +9,7 @@ type Props = {
   logoSrc?: string;
 };
 
-const StyledLabel = styled.a`
+const StyledLabel = styled(Link)`
   display: flex;
   align-items: center;
   gap: 1.5rem;
@@ -79,7 +80,7 @@ const Brand = ({
   overline = "Greendairy.nl",
   subtitle = "Farm Performance Dashboard",
 }: Props) => (
-  <StyledLabel href="/">
+  <StyledLabel to="/">
     <StyledLogoWrapper>
       <Logo />
     </StyledLogoWrapper>

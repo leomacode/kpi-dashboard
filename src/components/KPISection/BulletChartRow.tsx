@@ -8,6 +8,7 @@ import {
   getPositionInFixedTierSystem,
 } from "./bulletChartRangeUtils";
 import BulletChartMarker from "./BulletChartMarker";
+import { formatValue } from "./format";
 
 type Props = {
   kpi: KPIViewModel;
@@ -172,14 +173,6 @@ const StyledGoalText = styled.div`
   line-height: 1rem;
   color: var(--color-text-secondary);
 `;
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const formatValue = (val: number): string =>
-  val.toLocaleString("en-US", {
-    minimumFractionDigits: val % 1 === 0 ? 0 : 1,
-    maximumFractionDigits: val % 1 === 0 ? 0 : 1,
-  });
 
 // ─── Component ───────────────────────────────────────────────────────────────
 

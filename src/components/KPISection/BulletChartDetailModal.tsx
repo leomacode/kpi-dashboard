@@ -12,6 +12,7 @@ import {
   buildBulletChartRanges,
   getTierMetaByValue,
 } from "./bulletChartRangeUtils";
+import { formatValue } from "./format";
 
 type Props = {
   kpi: KPIViewModel;
@@ -310,14 +311,6 @@ const StyledFooterBtn = styled.button`
     background: var(--color-accent-darker);
   }
 `;
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const formatValue = (val: number): string =>
-  val.toLocaleString("en-US", {
-    minimumFractionDigits: val % 1 === 0 ? 0 : 1,
-    maximumFractionDigits: val % 1 === 0 ? 0 : 1,
-  });
 
 // ─── Component ───────────────────────────────────────────────────────────────
 

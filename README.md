@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/leomacode/kpi-dashboard/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/leomacode/kpi-dashboard/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-✔-3178c6?style=flat-square)
-![Tests](https://img.shields.io/badge/Tests-90%2B%20passing-22c55e?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-62%20unit%20%2B%2051%20E2E-22c55e?style=flat-square)
 ![Playwright](https://img.shields.io/badge/Playwright-51%20E2E%20tests-2563eb?style=flat-square)
 
 A sustainability KPI dashboard for agricultural farms, built to demonstrate custom data visualisation, real backend integration, and production-grade frontend engineering.
@@ -181,6 +181,21 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 Then run the schema and seed data in your Supabase SQL editor. See [`supabase/schema.sql`](./supabase/schema.sql).
+
+---
+
+## CI / Quality Gates
+
+GitHub Actions runs on every push to `master` and every PR:
+
+- **Static gate** — lint, typecheck, unit tests (62), production build.
+- **E2E gate** — Playwright tests, sharded for speed.
+  - **Pull request:** Chromium only, 2 parallel shards (~3 min).
+  - **Push to master:** Chromium + Firefox + WebKit, each 2 shards (~5 min, 6 parallel runners).
+- Browser binaries cached per Playwright version → cache hits skip ~60s/shard.
+- `npm run preview` serves the built `dist/` artifact from the static gate — no rebuild.
+
+Workflow: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
 
 ---
 

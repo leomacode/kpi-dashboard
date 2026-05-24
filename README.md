@@ -1,9 +1,8 @@
 # KPI Dashboard
 
+[![CI](https://github.com/leomacode/kpi-dashboard/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/leomacode/kpi-dashboard/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-✔-3178c6?style=flat-square)
 ![Tests](https://img.shields.io/badge/Tests-90%2B%20passing-22c55e?style=flat-square)
-![Build](https://img.shields.io/badge/Build-passing-22c55e?style=flat-square)
-![Lint](https://img.shields.io/badge/Lint-clean-22c55e?style=flat-square)
 ![Playwright](https://img.shields.io/badge/Playwright-51%20E2E%20tests-2563eb?style=flat-square)
 
 A sustainability KPI dashboard for agricultural farms, built to demonstrate custom data visualisation, real backend integration, and production-grade frontend engineering.

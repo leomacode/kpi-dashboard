@@ -422,9 +422,13 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
 
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
-      if (e.target === e.currentTarget) onClose();
+      if (e.target !== e.currentTarget) return;
+      // While editing, ignore backdrop clicks so an accidental click outside
+      // does not silently discard the user's draft plan value.
+      if (isEditing) return;
+      onClose();
     },
-    [onClose],
+    [onClose, isEditing],
   );
 
   return (

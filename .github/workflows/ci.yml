@@ -10,6 +10,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Force JS-based actions onto Node 24. Some actions (e.g. upload-artifact@v5)
+  # still ship a Node 20 runtime; Node 20 is being removed from runners.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   static:
     name: Lint • Typecheck • Unit • Build

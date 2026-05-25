@@ -80,7 +80,7 @@ src/
 │   └── ErrorBoundary.tsx
 ├── lib/
 │   └── supabase.ts
-└── test/
+└── unitTests/
     ├── bulletChartRangeUtils.test.ts
     ├── mappers.test.ts
     ├── BulletChartRow.test.tsx

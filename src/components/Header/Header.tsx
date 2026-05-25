@@ -8,7 +8,7 @@ const StyledContainer = styled.header`
   border-width: 1px;
   border-style: solid;
   border-radius: var(--radius-lg);
-  padding-block: calc(0.25rem * 4);
+  padding-block: 1rem;
   padding-inline: calc(0.25rem * 6);
   box-shadow: var(--shadow-sm);
 `;

@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import styled from "styled-components";
-import type { KPIViewModel } from "./types";
-import type { BulletChartDirectionality } from "./types";
+import type { KPIViewModel, BulletChartDirectionality } from "./types";
 
 import {
   buildBulletChartRanges,
@@ -214,9 +213,7 @@ const BulletChartRow = ({ kpi, onClick }: Props) => {
 
       <StyledChartCol>
         <StyledChartArea>
-          {kpi.unit && (
-            <StyledChartUnit title={kpi.unit}>({kpi.unit})</StyledChartUnit>
-          )}
+          <StyledChartUnit title={kpi.unit}>({kpi.unit})</StyledChartUnit>
           <StyledChartBar>
             {segments.map((s) => (
               <StyledSeg

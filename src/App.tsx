@@ -23,7 +23,6 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/kpis" />} />
               <Route path="/kpis" element={<KPISection title="Main KPIs" />} />
-              <Route path="/farm" element={<div>Farm Info coming soon</div>} />
               <Route path="*" element={<Navigate to="/kpis" />} />
             </Routes>
           </ErrorBoundary>

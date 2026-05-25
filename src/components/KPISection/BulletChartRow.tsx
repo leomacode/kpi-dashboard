@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import type { KPIViewModel, BulletChartDirectionality } from "./types";
 
@@ -11,7 +11,9 @@ import { formatValue } from "./format";
 
 type Props = {
   kpi: KPIViewModel;
-  onClick?: () => void;
+  // Receives kpi.id so the parent can use one stable handler for every row
+  // instead of allocating a new arrow per row on every render.
+  onClick?: (id: string) => void;
 };
 
 // ─── Styled Components ───────────────────────────────────────────────────────
@@ -193,10 +195,14 @@ const BulletChartRow = ({ kpi, onClick }: Props) => {
 
   const isHigher = directionality === "higher-is-better";
 
+  const handleClick = useCallback(() => {
+    onClick?.(kpi.id);
+  }, [onClick, kpi.id]);
+
   return (
     <StyledRowButton
       type="button"
-      onClick={onClick}
+      onClick={handleClick}
       disabled={!onClick}
       $clickable={Boolean(onClick)}
       data-testid="kpi-row"
@@ -247,4 +253,7 @@ const BulletChartRow = ({ kpi, onClick }: Props) => {
 };
 
 BulletChartRow.displayName = "BulletChartRow";
-export default BulletChartRow;
+
+// Memoised so a plan-value change to one KPI doesn't re-render every other row.
+// Combined with a stable `onClick` from the parent, only the affected row updates.
+export default memo(BulletChartRow);

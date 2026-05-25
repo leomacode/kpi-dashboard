@@ -198,11 +198,7 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
 
           <StyledKpiRows>
             {kpis.map((kpi) => (
-              <BulletChartRow
-                key={kpi.id}
-                kpi={kpi}
-                onClick={() => handleOpen(kpi.id)}
-              />
+              <BulletChartRow key={kpi.id} kpi={kpi} onClick={handleOpen} />
             ))}
           </StyledKpiRows>
         </>

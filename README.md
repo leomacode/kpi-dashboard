@@ -18,7 +18,7 @@ A sustainability KPI dashboard for agricultural farms, built to demonstrate cust
 - **Custom bullet chart** — built without a chart library, using a fixed 5-tier system where each tier always occupies 20% of the bar width
 - **Non-linear positioning algorithm** — handles both higher-is-better and lower-is-better KPIs, needle always moves rightward on improvement
 - **Optimistic updates** — plan value changes update the UI immediately with server rollback on failure
-- **90+ automated tests** — including 51 Playwright E2E tests across Chromium, Firefox, and WebKit
+- **Comprehensive test coverage** — 62 unit tests + 51 Playwright E2E tests across Chromium, Firefox, and WebKit
 - **Accessible modal** — keyboard navigation, focus trap, `role="dialog"`, `aria-modal`
 
 ---
@@ -34,7 +34,7 @@ A sustainability KPI dashboard for agricultural farms, built to demonstrate cust
 - **Frontend:** React, TypeScript
 - **Styling:** styled-components
 - **Backend:** Supabase (PostgreSQL + REST API)
-- **Routing:** React Router v6
+- **Routing:** React Router v7
 - **Testing:** Vitest, Testing Library, Playwright
 - **Build:** Vite
 

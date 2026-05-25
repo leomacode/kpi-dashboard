@@ -56,7 +56,6 @@ const StyledDot = styled.span`
   height: 0.5rem;
   border-radius: 62.4375rem; /* 9999px (Effectively infinite) */
   display: inline-block;
-  animation: syncPulse 1.5s ease-in-out infinite;
 
   @keyframes syncPulse {
     0% {
@@ -68,6 +67,10 @@ const StyledDot = styled.span`
     100% {
       opacity: 1;
     }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: syncPulse 1.5s ease-in-out infinite;
   }
 `;
 

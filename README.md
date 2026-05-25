@@ -157,7 +157,7 @@ styled-components reflects real production experience from Be Informed, keeps st
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - _(Optional)_ A Supabase project for plan value persistence
 
 ### Installation

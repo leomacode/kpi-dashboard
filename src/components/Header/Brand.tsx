@@ -9,17 +9,19 @@ type Props = {
   logoSrc?: string;
 };
 
-const StyledLabel = styled(Link)`
+const StyledRoot = styled.div`
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  text-decoration: none;
   white-space: nowrap;
-  border-radius: var(--radius-md);
+`;
 
-  &:hover {
-    text-decoration: none;
-  }
+const StyledLogoLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  text-decoration: none;
 
   &:focus {
     outline: none;
@@ -29,12 +31,6 @@ const StyledLabel = styled(Link)`
     outline: 2px solid var(--color-accent);
     outline-offset: 4px;
   }
-`;
-
-const StyledLogoWrapper = styled.span`
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
 
   img {
     height: 3.5rem;
@@ -80,17 +76,17 @@ const Brand = ({
   overline = "Greendairy.nl",
   subtitle = "Farm Performance Dashboard",
 }: Props) => (
-  <StyledLabel to="/">
-    <StyledLogoWrapper>
+  <StyledRoot>
+    <StyledLogoLink to="/" aria-label={`${overline} home`}>
       <Logo />
-    </StyledLogoWrapper>
+    </StyledLogoLink>
 
     <StyledTextBlock>
       {overline && <StyledBrandOverline>{overline}</StyledBrandOverline>}
       <StyledBrandTitle>{label}</StyledBrandTitle>
       {subtitle && <StyledBrandSubtitle>{subtitle}</StyledBrandSubtitle>}
     </StyledTextBlock>
-  </StyledLabel>
+  </StyledRoot>
 );
 
 Brand.displayName = "Brand";

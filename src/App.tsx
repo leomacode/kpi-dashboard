@@ -4,6 +4,7 @@ import Header from "./components/Header/Header";
 import FarmBar from "./components/FarmBar/FarmBar";
 import NavigationTabs from "./components/Tabs/Tabs";
 import KPISection from "./components/KPISection/KPISection";
+import FarmInfo from "./components/FarmInfo/FarmInfo";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 const TABS = [
@@ -23,6 +24,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/kpis" />} />
               <Route path="/kpis" element={<KPISection title="Main KPIs" />} />
+              <Route path="/farm" element={<FarmInfo />} />
               <Route path="*" element={<Navigate to="/kpis" />} />
             </Routes>
           </ErrorBoundary>

@@ -93,23 +93,31 @@ const StyledStatus = styled.div`
 
 const TIER_LABELS = ["Aspirant", "Bronze", "Silver", "Gold", "Platinum"];
 
+// Module-level cache so KPIs survive route unmount/remount — switching tabs
+// must not refetch from Supabase or flash the loading state.
+let kpiCache: KPIViewModel[] | null = null;
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const KPISection = ({ title = "Main KPIs" }: Props) => {
-  const [kpis, setKpis] = useState<KPIViewModel[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [kpis, setKpis] = useState<KPIViewModel[]>(kpiCache ?? []);
+  const [loading, setLoading] = useState(kpiCache === null);
   const [selectedKpiId, setSelectedKpiId] = useState<string | null>(null);
 
   // Fetch KPIs from Supabase.
   // If the backend is unavailable, fall back to mock data so the UI
   // remains usable in demo environments.
   useEffect(() => {
-    const fetchKpis = async () => {
-      setLoading(true);
+    // Already fetched this session — state was seeded from the cache.
+    if (kpiCache) return;
 
+    let cancelled = false;
+
+    const fetchKpis = async () => {
       // No Supabase env configured (CI without secrets, public demo, etc.)
       // — skip the network round-trip and render mock data immediately.
       if (!supabase) {
+        kpiCache = mockKpis;
         setKpis(mockKpis);
         setLoading(false);
         return;
@@ -120,17 +128,24 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
         .select("*")
         .order("id");
 
-      // Fall back to mock data if Supabase query fails or returns nothing
-      if (error || !data || data.length === 0) {
-        setKpis(mockKpis);
-      } else {
-        setKpis((data as SupabaseKpi[]).map(mapToViewModel));
-      }
+      if (cancelled) return;
 
+      // Fall back to mock data if Supabase query fails or returns nothing
+      const next =
+        error || !data || data.length === 0
+          ? mockKpis
+          : (data as SupabaseKpi[]).map(mapToViewModel);
+
+      kpiCache = next;
+      setKpis(next);
       setLoading(false);
     };
 
     fetchKpis();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const selectedKpi =
@@ -146,10 +161,16 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
 
   const handlePlanValueChange = useCallback(
     async (kpiId: string, value: number | null) => {
-      // Optimistic update — applied to local state regardless of backend
-      setKpis((prev) =>
-        prev.map((k) => (k.id === kpiId ? { ...k, planValue: value } : k)),
-      );
+      // Optimistic update — applied to local state regardless of backend.
+      // The cache is updated alongside so the edit survives a tab switch
+      // (assignment is idempotent, safe under StrictMode double-invoke).
+      setKpis((prev) => {
+        const next = prev.map((k) =>
+          k.id === kpiId ? { ...k, planValue: value } : k,
+        );
+        kpiCache = next;
+        return next;
+      });
 
       // In mock-only mode there's nothing to persist; the local optimistic
       // update is the source of truth for the session.
@@ -165,7 +186,11 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
         console.error("Failed to update plan value:", error.message);
         // Rollback — refetch from server to restore correct state
         const { data } = await supabase.from("kpis").select("*").order("id");
-        if (data) setKpis((data as SupabaseKpi[]).map(mapToViewModel));
+        if (data) {
+          const next = (data as SupabaseKpi[]).map(mapToViewModel);
+          kpiCache = next;
+          setKpis(next);
+        }
       }
     },
     [],

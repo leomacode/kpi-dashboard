@@ -22,10 +22,10 @@ export default function App() {
           <NavigationTabs items={TABS} />
           <ErrorBoundary>
             <Routes>
-              <Route path="/" element={<Navigate to="/kpis" />} />
+              <Route path="/" element={<Navigate to="/kpis" replace />} />
               <Route path="/kpis" element={<KPISection title="Main KPIs" />} />
               <Route path="/farm" element={<FarmInfo />} />
-              <Route path="*" element={<Navigate to="/kpis" />} />
+              <Route path="*" element={<Navigate to="/kpis" replace />} />
             </Routes>
           </ErrorBoundary>
         </Main>

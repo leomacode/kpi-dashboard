@@ -5,6 +5,7 @@ import {
   useState,
   useRef,
   useId,
+  useEffectEvent,
 } from "react";
 import styled, { css } from "styled-components";
 import type { KPIViewModel } from "./types";
@@ -352,16 +353,21 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
     [handleSave, handleCancel],
   );
 
+  // Effect Event: always reads the latest `isEditing` / `onClose` without
+  // being a reactive dependency, so the keydown listener is attached once on
+  // mount instead of being torn down and re-added on every parent render.
+  const onEscape = useEffectEvent(() => {
+    if (isEditing) handleCancel();
+    else onClose();
+  });
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (isEditing) handleCancel();
-        else onClose();
-      }
+      if (e.key === "Escape") onEscape();
     };
     document.addEventListener("keydown", handleEsc);
     return () => document.removeEventListener("keydown", handleEsc);
-  }, [onClose, isEditing, handleCancel]);
+  }, []);
 
   // Focus trap, initial focus, and body-scroll lock — invariant: while the
   // dialog is mounted, Tab/Shift+Tab cannot escape it and the page beneath

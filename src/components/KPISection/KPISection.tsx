@@ -162,25 +162,26 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
   const handlePlanValueChange = useCallback(
     async (kpiId: string, value: number | null) => {
       // Optimistic update — applied to local state regardless of backend.
-      // The cache is updated alongside so the edit survives a tab switch
-      // (assignment is idempotent, safe under StrictMode double-invoke).
-      setKpis((prev) => {
-        const next = prev.map((k) =>
-          k.id === kpiId ? { ...k, planValue: value } : k,
-        );
-        kpiCache = next;
-        return next;
-      });
+      // The cache is updated alongside so the edit survives a tab switch.
+      // `kpiCache` is the authoritative mirror of `kpis`, so derive the next
+      // list from it and write both here rather than inside the updater —
+      // state updaters must stay pure (React may invoke them more than once).
+      const next = (kpiCache ?? []).map((k) =>
+        k.id === kpiId ? { ...k, planValue: value } : k,
+      );
+      kpiCache = next;
+      setKpis(next);
 
       // In mock-only mode there's nothing to persist; the local optimistic
       // update is the source of truth for the session.
       if (!supabase) return;
 
-      // Persist to Supabase
-      const { error } = await supabase
-        .from("kpis")
-        .update({ plan_value: value })
-        .eq("id", kpiId);
+      // Persist via the narrow RPC — the table has no client update policy,
+      // so this function is the only write path (see supabase/schema.sql).
+      const { error } = await supabase.rpc("set_plan_value", {
+        kpi_id: kpiId,
+        plan: value,
+      });
 
       if (error) {
         console.error("Failed to update plan value:", error.message);

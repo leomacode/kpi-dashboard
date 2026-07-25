@@ -44,5 +44,23 @@ insert into kpis values
 
 -- Enable Row Level Security
 alter table kpis enable row level security;
+
+-- Reads are public by design: seeded benchmark reference data, no per-user rows.
 create policy "Allow public read" on kpis for select using (true);
-create policy "Allow public update" on kpis for update using (true);
+
+-- Deliberately NO client write policy. The anon key ships in the browser
+-- bundle, so a `for update using (true)` policy would let anyone rewrite
+-- measured values, thresholds and explanations for every visitor. The one
+-- legitimate client write — setting a plan target — goes through the narrow
+-- function below, which is the authorization boundary.
+create function set_plan_value(kpi_id text, plan float8)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update kpis set plan_value = plan where id = kpi_id;
+$$;
+
+revoke execute on function set_plan_value(text, float8) from public;
+grant execute on function set_plan_value(text, float8) to anon, authenticated;

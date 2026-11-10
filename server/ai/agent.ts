@@ -12,15 +12,15 @@ export const TIMEOUT = { totalMs: 45_000, firstChunkMs: 20_000, chunkMs: 15_000 
 
 export function buildInstructions(data: KpiData, today: Date): string {
   const months = [...new Set(data.history.map((p) => p.month))].sort();
-  const metrics = data.kpis.map((k) => `- ${k.id}: ${k.name} (${k.unit}, ${k.directionality})`);
   return [
     "You answer questions about a farm's sustainability KPIs.",
     `Today is ${today.toISOString().slice(0, 10)}. Monthly data covers ${months[0]} to ${months[months.length - 1]}; "last month" means the latest month with data.`,
-    "Metrics:",
-    ...metrics,
+    "Tools: listMetrics for ids, units, plans and tiers; comparePeriods to compare periods (omit `metrics` to cover all at once); queryMetric for one metric's monthly series.",
+    "Prefer the fewest tool calls: for questions across all metrics use one comparePeriods or listMetrics call, not one call per metric.",
     "Rules:",
     "- Use the tools for every number you state. Never guess or invent values.",
     "- Respect directionality: for lower-is-better metrics a decrease is an improvement.",
+    "- \"Dropped most\" means the largest relative decrease (%) unless the user asks otherwise; mention whether that is good or bad.",
     "- If a question is outside this data, say so briefly.",
     "- Answer in plain text (no markdown), in at most a few short sentences, and always include units.",
   ].join("\n");

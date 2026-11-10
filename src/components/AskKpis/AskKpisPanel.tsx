@@ -3,6 +3,8 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import styled from "styled-components";
 import { MAX_QUESTION_CHARS, describeError, toWireMessages } from "./wire";
+import ShowTheWork from "./ShowTheWork";
+import { toToolSteps } from "./toolSteps";
 
 const SUGGESTIONS = [
   "Which metric dropped most last month?",
@@ -219,6 +221,7 @@ const AskKpisPanel = () => {
             {m.parts.map((part, i) =>
               part.type === "text" ? <span key={i}>{part.text}</span> : null,
             )}
+            {m.role === "assistant" && <ShowTheWork steps={toToolSteps(m)} />}
           </StyledMessage>
         ))}
       </StyledLog>

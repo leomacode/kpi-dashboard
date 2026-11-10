@@ -59,7 +59,12 @@ export function toClientError(error: unknown): string {
     APICallError.isInstance(cause) || StreamProviderError.isInstance(cause)
       ? cause.statusCode
       : undefined;
-  if (status === 429 || status === 503) {
+  // 429 = the API key's quota is used up (the free tier allows only a few
+  // requests per minute); 503 = the provider is overloaded.
+  if (status === 429) {
+    return "You have reached the usage limit for now. Please try again later.";
+  }
+  if (status === 503) {
     return "The AI service is busy right now. Please try again in a minute.";
   }
   if (cause instanceof DOMException && cause.name === "TimeoutError") {

@@ -31,3 +31,16 @@ export type SupabaseKpi = {
   explanation: string;
   directionality: "higher-is-better" | "lower-is-better";
 };
+
+// One monthly reading. `month` is "YYYY-MM".
+export type KpiHistoryPoint = {
+  kpiId: string;
+  month: string;
+  value: number;
+};
+
+export type SupabaseKpiHistory = {
+  kpi_id: string;
+  month: string;
+  value: number;
+};

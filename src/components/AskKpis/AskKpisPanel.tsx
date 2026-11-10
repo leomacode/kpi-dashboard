@@ -33,6 +33,13 @@ const StyledCard = styled.section`
   gap: 1rem;
 `;
 
+const StyledHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+`;
+
 const StyledTitle = styled.h2`
   margin: 0;
   font-size: 1.25rem;
@@ -180,9 +187,16 @@ const StyledSuggestions = styled.ul`
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const AskKpisPanel = () => {
-  const { messages, sendMessage, status, error, stop, regenerate } = useChat({
-    transport,
-  });
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    status,
+    error,
+    clearError,
+    stop,
+    regenerate,
+  } = useChat({ transport });
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
@@ -199,6 +213,14 @@ const AskKpisPanel = () => {
     inputRef.current?.focus();
   };
 
+  const newChat = () => {
+    void stop();
+    setMessages([]);
+    clearError();
+    setInput("");
+    inputRef.current?.focus();
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     ask(question);
@@ -206,13 +228,20 @@ const AskKpisPanel = () => {
 
   return (
     <StyledCard aria-labelledby={titleId} data-testid="ask-kpis">
-      <div>
-        <StyledTitle id={titleId}>Ask your KPIs</StyledTitle>
-        <StyledSubtitle>
-          Questions are answered by an AI assistant using this dashboard's
-          data. Answers can be wrong — check the numbers.
-        </StyledSubtitle>
-      </div>
+      <StyledHeader>
+        <div>
+          <StyledTitle id={titleId}>Ask your KPIs</StyledTitle>
+          <StyledSubtitle>
+            Questions are answered by an AI assistant using this dashboard's
+            data. Answers can be wrong — check the numbers.
+          </StyledSubtitle>
+        </div>
+        {(messages.length > 0 || error) && (
+          <StyledButton type="button" $variant="secondary" onClick={newChat}>
+            New chat
+          </StyledButton>
+        )}
+      </StyledHeader>
 
       <StyledLog aria-label="Conversation" aria-live="polite" aria-busy={busy}>
         {messages.map((m) => (

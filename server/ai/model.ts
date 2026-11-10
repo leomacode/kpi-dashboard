@@ -5,8 +5,10 @@ import { createProviderRegistry, type LanguageModel } from "ai";
 
 const registry = createProviderRegistry({ google, anthropic, openai });
 
-// Gemini has a free API tier (AI Studio key), so it is the default.
-export const DEFAULT_MODEL = "google:gemini-flash-latest";
+// Gemini has a free API tier (AI Studio key), so it is the default. Pinned
+// rather than "gemini-flash-latest": the alias drifts (breaking eval
+// comparability) and was returning 503 "high demand" when this was written.
+export const DEFAULT_MODEL = "google:gemini-3.5-flash";
 
 type ModelId = Parameters<typeof registry.languageModel>[0];
 

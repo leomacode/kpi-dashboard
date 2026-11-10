@@ -1,6 +1,8 @@
 import {
   APICallError,
   LoadAPIKeyError,
+  RetryError,
+  StreamProviderError,
   createUIMessageStreamResponse,
   toUIMessageStream,
   type LanguageModel,
@@ -49,8 +51,19 @@ const text = (status: number, body: string, headers: HeadersInit = {}) =>
 // Never forward raw provider errors to the browser: they can contain request
 // ids, model names or account details. Log server-side, show a friendly line.
 export function toClientError(error: unknown): string {
-  if (APICallError.isInstance(error) && error.statusCode === 429) {
+  // The SDK retries transient failures and wraps the last one.
+  const cause = RetryError.isInstance(error) ? error.lastError : error;
+  // Overload can surface before streaming (APICallError) or mid-stream
+  // (StreamProviderError); both carry the HTTP status.
+  const status =
+    APICallError.isInstance(cause) || StreamProviderError.isInstance(cause)
+      ? cause.statusCode
+      : undefined;
+  if (status === 429 || status === 503) {
     return "The AI service is busy right now. Please try again in a minute.";
+  }
+  if (cause instanceof DOMException && cause.name === "TimeoutError") {
+    return "The AI service took too long to answer. Please try again.";
   }
   if (LoadAPIKeyError.isInstance(error)) {
     return "The AI service is not configured on this deployment.";
@@ -114,15 +127,13 @@ export function createAskHandler(deps: {
         model: deps.getModel(),
         messages,
         data: await deps.loadData(),
+        onError: log,
       });
       return createUIMessageStreamResponse({
         stream: toUIMessageStream({
           stream: result.stream,
           tools,
-          onError: (error) => {
-            log(error);
-            return toClientError(error);
-          },
+          onError: toClientError,
         }),
       });
     } catch (error) {

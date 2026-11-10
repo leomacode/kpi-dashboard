@@ -5,6 +5,11 @@ import { createTools } from "./tools.js";
 // Hard ceiling on model ↔ tool round-trips per question.
 export const MAX_STEPS = 8;
 
+// Fail fast instead of leaving the UI spinning: an overloaded free-tier model
+// can stall a stream indefinitely. The serverless function stops long before
+// any platform limit.
+export const TIMEOUT = { totalMs: 45_000, firstChunkMs: 20_000, chunkMs: 15_000 };
+
 export function buildInstructions(data: KpiData, today: Date): string {
   const months = [...new Set(data.history.map((p) => p.month))].sort();
   const metrics = data.kpis.map((k) => `- ${k.id}: ${k.name} (${k.unit}, ${k.directionality})`);
@@ -26,11 +31,14 @@ export function runAgent({
   messages,
   data,
   today = new Date(),
+  onError,
 }: {
   model: LanguageModel;
   messages: ModelMessage[];
   data: KpiData;
   today?: Date;
+  // Replaces streamText's default console.error so each error is logged once.
+  onError: (error: unknown) => void;
 }) {
   const tools = createTools(data);
   return {
@@ -41,6 +49,11 @@ export function runAgent({
       messages,
       tools,
       stopWhen: isStepCount(MAX_STEPS),
+      timeout: TIMEOUT,
+      // Retry provider errors that arrive after streaming started (e.g. a
+      // mid-stream 503 "high demand"); off by default in the SDK.
+      streamRetries: 2,
+      onError: ({ error }) => onError(error),
     }),
   };
 }

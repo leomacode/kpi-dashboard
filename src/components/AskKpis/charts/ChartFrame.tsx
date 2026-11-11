@@ -74,7 +74,7 @@ const ChartFrame = ({ title, children, table }: Props) => (
             {table.rows.map((row) => (
               <tr key={row.join("|")}>
                 {row.map((cell, i) => (
-                  <td key={i}>{cell}</td>
+                  <td key={table.head[i]}>{cell}</td>
                 ))}
               </tr>
             ))}

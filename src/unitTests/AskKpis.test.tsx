@@ -124,7 +124,10 @@ describe("toToolSteps", () => {
 describe("chartsOf", () => {
   it("collects successful charts", () => {
     const msg = assistant(toolPart("renderChart", {}, { ok: true, summary: "Drew", chart: barChart }));
-    expect(chartsOf(msg)).toEqual({ charts: [barChart], chartFailed: false });
+    const { charts, chartFailed } = chartsOf(msg);
+    expect(charts.map((c) => c.chart)).toEqual([barChart]);
+    expect(charts[0].id).toEqual(expect.any(String)); // stable React key
+    expect(chartFailed).toBe(false);
   });
 
   it("flags a failure only when the model gave up without any chart", () => {

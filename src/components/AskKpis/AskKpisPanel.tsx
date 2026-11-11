@@ -199,8 +199,8 @@ const AssistantExtras = ({ message }: { message: UIMessage }) => {
   const { charts, chartFailed } = chartsOf(message);
   return (
     <>
-      {charts.map((chart, i) => (
-        <AnswerChart key={i} chart={chart} />
+      {charts.map(({ id, chart }) => (
+        <AnswerChart key={id} chart={chart} />
       ))}
       {chartFailed && (
         <StyledChartError data-testid="chart-error">

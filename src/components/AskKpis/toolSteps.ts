@@ -57,14 +57,16 @@ export function toToolSteps(message: UIMessage): ToolStep[] {
 const isRenderChartResult = (o: unknown): o is RenderChartResult =>
   typeof o === "object" && o !== null && "ok" in o && typeof o.ok === "boolean";
 
-export function chartsOf(message: UIMessage): { charts: ChartData[]; chartFailed: boolean } {
+export function chartsOf(message: UIMessage): {
+  charts: { id: string; chart: ChartData }[];
+  chartFailed: boolean;
+} {
   const results = message.parts
     .filter(isToolUIPart)
     .filter((p) => getToolName(p) === "renderChart" && p.state === "output-available")
-    .map((p) => p.output)
-    .filter(isRenderChartResult);
+    .flatMap((p) => (isRenderChartResult(p.output) ? [{ id: p.toolCallId, result: p.output }] : []));
 
-  const charts = results.flatMap((r) => (r.ok ? [r.chart] : []));
-  const chartFailed = charts.length === 0 && results.some((r) => !r.ok && r.gaveUp);
+  const charts = results.flatMap(({ id, result }) => (result.ok ? [{ id, chart: result.chart }] : []));
+  const chartFailed = charts.length === 0 && results.some(({ result }) => !result.ok && result.gaveUp);
   return { charts, chartFailed };
 }

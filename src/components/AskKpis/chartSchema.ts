@@ -12,38 +12,34 @@ const Month = z
   .string()
   .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Use YYYY-MM, e.g. 2026-10");
 const Period = z
-  .object({ from: Month, to: Month.optional() })
-  .strict()
+  .strictObject({ from: Month, to: Month.optional() })
   .describe("Month range, inclusive; `to` defaults to `from`");
 
 export const ChartSpec = z.discriminatedUnion("type", [
   z
-    .object({
+    .strictObject({
       type: z.literal("bullet"),
       title: Title,
       metricIds: z.array(MetricId).min(1).max(7),
     })
-    .strict()
     .describe("Current value vs tiers and plan, using the dashboard's bullet chart"),
   z
-    .object({
+    .strictObject({
       type: z.literal("line"),
       title: Title,
       metricId: MetricId,
       from: Month.optional(),
       to: Month.optional(),
     })
-    .strict()
     .describe("One metric's monthly values over time"),
   z
-    .object({
+    .strictObject({
       type: z.literal("bar"),
       title: Title,
       metricIds: z.array(MetricId).min(1).max(7).optional().describe("Omit for all metrics"),
       periodA: Period,
       periodB: Period,
     })
-    .strict()
     .describe("% change per metric from period A to period B"),
 ]);
 

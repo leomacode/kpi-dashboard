@@ -198,7 +198,10 @@ Zero chart retries in the real run means the retry loop is proven by the unit an
 
 ### What I learned
 
-_To be written._
+- **The model should never write the numbers in a chart.** It only picks the chart type, metric and period; the server fills in the values from the data. A chart can then be wrong in its shape, but never in its numbers, and the Zod error-and-retry loop handles bad shapes.
+- **Evals find what unit tests miss.** The first runs against the real API caught the model printing its own instructions when asked to, and returning a chart with no text answer. Both became prompt rules and permanent eval cases.
+- **Free tiers fail in their own ways.** Quotas and overload are per model, so a 429 or 503 now falls back to the next model in the chain, and a fully used quota shows a plain "usage limit" message instead of an error.
+- **Mock the stream, not the model.** The Playwright tests replay recorded SSE responses, so CI checks the whole UI with no API key and no flaky network calls.
 
 ---
 

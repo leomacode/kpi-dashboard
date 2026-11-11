@@ -26,7 +26,7 @@ A sustainability KPI dashboard for agricultural farms, built to demonstrate cust
 
 ## Screenshot
 
-![Dashboard screenshot](./public/Screenshot.png)
+![Dashboard with KPI bullet charts and the Ask your KPIs assistant](./public/Screenshot.png)
 
 ---
 

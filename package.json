@@ -12,11 +12,12 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write src/",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
-    "doctor": "npx react-doctor@latest"
+    "doctor": "npx react-doctor@latest",
+    "eval": "vitest run --config vitest.eval.config.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.99",

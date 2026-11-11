@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent } from "react";
+import { memo, useId, useRef, useState, type FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import styled from "styled-components";
@@ -194,11 +194,20 @@ const StyledSuggestions = styled.ul`
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-// Chart(s), chart failure note and "show the work" under an assistant answer.
-const AssistantExtras = ({ message }: { message: UIMessage }) => {
-  const { charts, chartFailed } = chartsOf(message);
+// One conversation entry: text, then for answers the chart(s), the chart
+// failure note and "show the work".
+// Memoised: while an answer streams, useChat replaces only that message
+// object and keeps earlier ones, so finished answers (and their charts)
+// skip re-rendering on every token.
+const MessageItem = memo(({ message }: { message: UIMessage }) => {
+  const isAssistant = message.role === "assistant";
+  const { charts, chartFailed } = isAssistant ? chartsOf(message) : { charts: [], chartFailed: false };
   return (
-    <>
+    <StyledMessage $role={message.role}>
+      <StyledSpeaker>{isAssistant ? "Assistant" : "You"}</StyledSpeaker>
+      {message.parts.map((part, i) =>
+        part.type === "text" ? <span key={i}>{part.text}</span> : null,
+      )}
       {charts.map(({ id, chart }) => (
         <AnswerChart key={id} chart={chart} />
       ))}
@@ -209,10 +218,11 @@ const AssistantExtras = ({ message }: { message: UIMessage }) => {
           unaffected.
         </StyledChartError>
       )}
-      <ShowTheWork steps={toToolSteps(message)} />
-    </>
+      {isAssistant && <ShowTheWork steps={toToolSteps(message)} />}
+    </StyledMessage>
   );
-};
+});
+MessageItem.displayName = "MessageItem";
 
 const AskKpisPanel = () => {
   const {
@@ -224,7 +234,11 @@ const AskKpisPanel = () => {
     clearError,
     stop,
     regenerate,
-  } = useChat({ transport });
+  } = useChat({
+    transport,
+    // Batch streamed tokens into at most ~20 renders per second.
+    throttle: 50,
+  });
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
@@ -273,13 +287,7 @@ const AskKpisPanel = () => {
 
       <StyledLog aria-label="Conversation" aria-live="polite" aria-busy={busy}>
         {messages.map((m) => (
-          <StyledMessage key={m.id} $role={m.role}>
-            <StyledSpeaker>{m.role === "user" ? "You" : "Assistant"}</StyledSpeaker>
-            {m.parts.map((part, i) =>
-              part.type === "text" ? <span key={i}>{part.text}</span> : null,
-            )}
-            {m.role === "assistant" && <AssistantExtras message={m} />}
-          </StyledMessage>
+          <MessageItem key={m.id} message={m} />
         ))}
       </StyledLog>
 

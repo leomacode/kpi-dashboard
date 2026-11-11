@@ -20,6 +20,7 @@ A sustainability KPI dashboard for agricultural farms, built to demonstrate cust
 - **Optimistic updates** — plan value changes update the UI immediately with server rollback on failure
 - **Comprehensive test coverage** — 62 unit tests + 51 Playwright E2E tests across Chromium, Firefox, and WebKit
 - **Accessible modal** — keyboard navigation, focus trap, `role="dialog"`, `aria-modal`
+- **"Ask your KPIs" AI assistant** — plain-language questions answered by a tool-calling agent over the dashboard's real data, streamed, with every tool call shown
 
 ---
 
@@ -35,6 +36,8 @@ A sustainability KPI dashboard for agricultural farms, built to demonstrate cust
 - **Styling:** styled-components
 - **Backend:** Supabase (PostgreSQL + REST API)
 - **Routing:** React Router v7
+- **AI:** Vercel AI SDK 7 (tool calling, streaming), Zod, Google Gemini by default (Anthropic and OpenAI supported)
+- **Serverless:** Vercel Functions (`api/`)
 - **Testing:** Vitest, Testing Library, Playwright
 - **Build:** Vite
 
@@ -56,12 +59,110 @@ The dashboard visualises those KPIs using a custom bullet chart, allows farmers 
 - **Mock data fallback** — app always works without a configured backend
 - **Interactive modal** — detail view with tier, plan value editor, thresholds, and explanation
 - **Error boundary** — catches render errors and shows a recoverable fallback UI
+- **Ask your KPIs** — chat panel below the KPI card; see the next section
+
+---
+
+## Ask your KPIs (AI assistant)
+
+A chat panel on the KPI page. Ask a question in plain language — _"Which metric dropped most last month?"_, _"Which KPIs are behind their plan?"_, _"Compare nitrogen farm surplus in Q1 with Q3"_ — and get a streamed answer grounded in the dashboard's data. Under each answer, **Show the work** lists every tool the agent called, with its input and a one-line result, so every number can be traced back to the data.
+
+### How it works
+
+```
+Browser (AskKpisPanel)                 Vercel Function (api/ask.ts)
+──────────────────────                 ──────────────────────────────────────────
+useChat ── POST plain-text history ──▶ validate (Zod) · rate limit · size limits
+                                              │
+                                              ▼
+                                       streamText (agent loop, max 8 steps)
+                                       ┌──────────────────────────────────┐
+                                       │ model decides ──▶ tool call      │
+                                       │      ▲               │           │
+                                       │      └── tool result ┘           │
+                                       │ … until it can answer            │
+                                       └──────────────────────────────────┘
+                                              │
+◀──────── UI message stream (SSE) ────────────┘
+text + tool-call parts → answer + "Show the work"
+```
+
+The model never sees the database directly. It can only call typed tools that read the same KPI data as the dashboard (Supabase when configured, otherwise the bundled mock data), so the numbers it states come from tool results, not from its training data.
+
+### Tools
+
+All tool inputs are defined with Zod; the SDK validates every call before it runs. Every tool returns a `summary` line, which is what the "Show the work" panel displays.
+
+| Tool | Input | Returns |
+|---|---|---|
+| `listMetrics` | optional `directionality`, `tier` filters | id, unit, directionality, current value, plan, tier, and the month range with data |
+| `queryMetric` | `metric` (id or name), optional `from` / `to` month | monthly values in range, plus current value, plan and tier |
+| `comparePeriods` | `periodA`, `periodB` (month ranges, averaged), optional `metrics` | change, % change and an `improved / worsened` verdict that respects directionality, sorted by biggest relative drop |
+
+`comparePeriods` covers all metrics in one call when `metrics` is omitted. Before it existed, "which metric dropped most" took seven `queryMetric` calls; now it takes one.
+
+### Data
+
+Each KPI has 12 months of history (`kpi_history`, Nov 2025 – Oct 2026), and the last month always equals the KPI's current value, so the assistant and the bullet chart never disagree. The mock series in `mockHistory.ts` mirrors the SQL seed.
+
+### Model and fallback
+
+The model is set with `AI_MODEL`, a comma-separated list of `<provider>:<model>` tried in order:
+
+```
+AI_MODEL=google:gemini-3.5-flash,google:gemini-3.5-flash-lite   # default
+AI_MODEL=anthropic:claude-sonnet-5-5                            # any single model works too
+```
+
+Gemini is the default because it has a free API tier. Free quotas are small and per model (`gemini-3.5-flash` allows 20 requests per day), so a model middleware (`wrapLanguageModel`) moves to the next model in the list when one returns 429 (quota used up) or 503 (overloaded). Model versions are pinned rather than `-latest` aliases so behaviour doesn't change under you.
+
+### Security and limits
+
+| Concern | Handling |
+|---|---|
+| API key | Lives only in the serverless function's environment — never `VITE_`-prefixed, never in the browser bundle |
+| Untrusted input | The browser sends plain-text history only; the server never accepts client-supplied tool calls or results. Request body validated with Zod |
+| Input size | 500 characters per question, last 10 messages, 64 KB body |
+| Abuse | 10 requests per minute per IP (sliding window, returns `429` with `Retry-After`) |
+| Runaway agent | Maximum 8 model/tool steps per question |
+| Hanging provider | Timeouts: 45 s total, 20 s to first chunk, 15 s between chunks; mid-stream provider errors retried twice |
+| Error leakage | Provider errors are logged server-side and replaced with a short message: _usage limit reached_, _service busy_, _took too long_, or a generic error |
+| CSP | Unchanged — `/api/ask` is same-origin, so `connect-src 'self'` already covers it |
+
+The rate limiter is in memory, so each serverless instance counts separately and a cold start resets it. That is enough to stop casual abuse of a demo; a shared store such as Upstash Redis would be the next step.
+
+### Accessibility
+
+- The conversation is an `aria-live="polite"` list with `aria-busy` while an answer streams
+- Errors use `role="alert"` with a **Try again** button
+- Focus stays in the question input after asking; **New chat** clears the conversation and returns focus there
+- **Show the work** is a native `<details>` / `<summary>`, so it works with the keyboard out of the box
+- The panel is lazy-loaded, so the AI SDK stays out of the initial bundle
+
+### In progress
+
+- **Chart generation** — the model returns a chart config validated against a Zod schema compatible with the existing chart components; on a validation error the error is sent back to the model for up to 3 attempts, then a clear error is shown
+- **Tests and evals** — unit tests for the tools and the retry loop, Playwright tests with a mocked model stream (no real API calls in CI), and a separate eval script of 10–15 questions with expected tool calls, run against the real API
+
+### What I learned
+
+_To be written._
 
 ---
 
 ## Architecture
 
 ```
+api/
+└── ask.ts                              # Vercel Function: POST /api/ask (thin entry point)
+server/
+└── ai/
+    ├── handler.ts                      # Request validation, rate limit, streaming, error mapping
+    ├── agent.ts                        # Instructions, streamText agent loop, step limit, timeouts
+    ├── tools.ts                        # listMetrics, queryMetric, comparePeriods (Zod inputs)
+    ├── model.ts                        # AI_MODEL parsing, provider registry, quota fallback
+    ├── data.ts                         # Server-side KPI + history load (Supabase or mock)
+    └── rateLimit.ts                    # In-memory sliding-window limiter
 src/
 ├── components/
 │   ├── KPISection/
@@ -73,7 +174,13 @@ src/
 │   │   ├── mappers.ts                  # Supabase → ViewModel transformation
 │   │   ├── types.ts                    # Shared TypeScript types
 │   │   └── data/
-│   │       └── mockKpis.ts             # Sample data fallback
+│   │       ├── mockKpis.ts             # Sample data fallback
+│   │       └── mockHistory.ts          # 12 months of history per KPI
+│   ├── AskKpis/
+│   │   ├── AskKpisPanel.tsx            # Chat panel (useChat, streaming, errors, New chat)
+│   │   ├── ShowTheWork.tsx             # Expandable list of tool calls under each answer
+│   │   ├── toolSteps.ts                # Tool message parts → display steps
+│   │   └── wire.ts                     # Plain-text request payload, error messages
 │   ├── Header/
 │   ├── FarmBar/
 │   ├── Tabs/
@@ -171,6 +278,21 @@ npm run dev
 
 The app runs on sample data by default. No Supabase account needed.
 
+### Enabling Ask your KPIs _(optional)_
+
+1. Get a free Gemini API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+2. Add it to `.env` (never to `.env.example`, which is committed):
+
+   ```
+   GOOGLE_GENERATIVE_AI_API_KEY=your-key
+   # optional — defaults to google:gemini-3.5-flash,google:gemini-3.5-flash-lite
+   AI_MODEL=google:gemini-3.5-flash
+   ```
+
+3. Restart `npm run dev`. The dev server serves `/api/ask` itself, so `vercel dev` is not needed.
+
+On Vercel, set the same variables in the project's environment settings. Without a key the dashboard works normally and the panel shows "The AI service is not configured on this deployment."
+
 ### Connecting Supabase _(optional)_
 
 Create a `.env` file in the project root:
@@ -180,7 +302,7 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-Then run the schema and seed data in your Supabase SQL editor. See [`supabase/schema.sql`](./supabase/schema.sql).
+Then run the schema and seed data in your Supabase SQL editor. It creates both `kpis` and `kpi_history` (the monthly data used by Ask your KPIs). See [`supabase/schema.sql`](./supabase/schema.sql).
 
 ---
 

@@ -37,7 +37,8 @@ export const AskRequest = z.object({
     )
     .min(1)
     .max(LIMITS.messages)
-    .refine((m) => m[m.length - 1].role === "user", "Last message must be from the user"),
+    // `?.`: Zod 4 still runs this refinement when .min(1) failed on [].
+    .refine((m) => m[m.length - 1]?.role === "user", "Last message must be from the user"),
 });
 
 export type AskRequest = z.infer<typeof AskRequest>;

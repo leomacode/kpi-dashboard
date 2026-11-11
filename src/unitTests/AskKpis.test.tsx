@@ -6,12 +6,19 @@ import { chartsOf, toToolSteps } from "../components/AskKpis/toolSteps";
 import ShowTheWork from "../components/AskKpis/ShowTheWork";
 import AnswerChart from "../components/AskKpis/charts/AnswerChart";
 import { monthLabel } from "../components/AskKpis/charts/monthLabel";
-import type { ChartData, RenderChartResult } from "../components/AskKpis/chartSchema";
+import type {
+  ChartData,
+  RenderChartResult,
+} from "../components/AskKpis/chartSchema";
 import { mockKpis } from "../components/KPISection/data/mockKpis";
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
-const text = (role: UIMessage["role"], t: string, id = crypto.randomUUID()): UIMessage => ({
+const text = (
+  role: UIMessage["role"],
+  t: string,
+  id = crypto.randomUUID(),
+): UIMessage => ({
   id,
   role,
   parts: [{ type: "text", text: t }],
@@ -24,7 +31,13 @@ const toolPart = (
   state: "output-available" | "input-available" = "output-available",
 ): UIMessage["parts"][number] =>
   state === "output-available"
-    ? { type: `tool-${name}`, toolCallId: crypto.randomUUID(), state, input, output }
+    ? {
+        type: `tool-${name}`,
+        toolCallId: crypto.randomUUID(),
+        state,
+        input,
+        output,
+      }
     : { type: `tool-${name}`, toolCallId: crypto.randomUUID(), state, input };
 
 const assistant = (...parts: UIMessage["parts"]): UIMessage => ({
@@ -39,8 +52,18 @@ const barChart: ChartData = {
   periodA: "2026-09",
   periodB: "2026-10",
   bars: [
-    { id: "kpi-6", name: "Species-Rich Grassland", changePct: -18.58, verdict: "worsened" },
-    { id: "kpi-4", name: "Nitrogen Soil Surplus", changePct: -3.39, verdict: "improved" },
+    {
+      id: "kpi-6",
+      name: "Species-Rich Grassland",
+      changePct: -18.58,
+      verdict: "worsened",
+    },
+    {
+      id: "kpi-4",
+      name: "Nitrogen Soil Surplus",
+      changePct: -3.39,
+      verdict: "improved",
+    },
   ],
 };
 
@@ -59,7 +82,10 @@ describe("toWireMessages", () => {
   it("sends plain text only, dropping tool parts and empty messages", () => {
     const msgs = [
       text("user", "Which metric dropped most?"),
-      assistant(toolPart("listMetrics", {}, { summary: "7 metrics" }), { type: "text", text: "Grassland." }),
+      assistant(toolPart("listMetrics", {}, { summary: "7 metrics" }), {
+        type: "text",
+        text: "Grassland.",
+      }),
       assistant(toolPart("listMetrics", {}, { summary: "x" })),
     ];
     expect(toWireMessages(msgs)).toEqual([
@@ -80,14 +106,19 @@ describe("toWireMessages", () => {
 
 describe("describeError", () => {
   it("shows the server's short plain-text message", () => {
-    expect(describeError(new Error("Too many questions. Please wait 42 s and try again."))).toBe(
-      "Too many questions. Please wait 42 s and try again.",
-    );
+    expect(
+      describeError(
+        new Error("Too many questions. Please wait 42 s and try again."),
+      ),
+    ).toBe("Too many questions. Please wait 42 s and try again.");
   });
 
   it("hides HTML error pages, long bodies and network errors", () => {
-    const generic = "The assistant is unavailable right now. Please try again later.";
-    expect(describeError(new Error("<!doctype html><html>404</html>"))).toBe(generic);
+    const generic =
+      "The assistant is unavailable right now. Please try again later.";
+    expect(describeError(new Error("<!doctype html><html>404</html>"))).toBe(
+      generic,
+    );
     expect(describeError(new Error("x".repeat(300)))).toBe(generic);
     expect(describeError(new TypeError("Failed to fetch"))).toBe(generic);
   });
@@ -99,31 +130,58 @@ describe("toToolSteps", () => {
   it("maps each tool call to name, input, status and summary", () => {
     const steps = toToolSteps(
       assistant(
-        toolPart("comparePeriods", { periodA: { from: "2026-09" } }, { summary: "7 metrics: 2026-09 vs 2026-10" }),
-        toolPart("queryMetric", { metric: "kpi-5" }, undefined, "input-available"),
+        toolPart(
+          "comparePeriods",
+          { periodA: { from: "2026-09" } },
+          { summary: "7 metrics: 2026-09 vs 2026-10" },
+        ),
+        toolPart(
+          "queryMetric",
+          { metric: "kpi-5" },
+          undefined,
+          "input-available",
+        ),
       ),
     );
-    expect(steps.map(({ name, status, result }) => ({ name, status, result }))).toEqual([
-      { name: "comparePeriods", status: "done", result: "7 metrics: 2026-09 vs 2026-10" },
+    expect(
+      steps.map(({ name, status, result }) => ({ name, status, result })),
+    ).toEqual([
+      {
+        name: "comparePeriods",
+        status: "done",
+        result: "7 metrics: 2026-09 vs 2026-10",
+      },
       { name: "queryMetric", status: "running", result: "Running…" },
     ]);
   });
 
   it("marks a tool that reports ok:false as an error and parses its JSON spec", () => {
-    const [step] = toToolSteps(assistant(toolPart("renderChart", { spec: '{"type":"pie"}' }, failed(false))));
+    const [step] = toToolSteps(
+      assistant(
+        toolPart("renderChart", { spec: '{"type":"pie"}' }, failed(false)),
+      ),
+    );
     expect(step.status).toBe("error");
     expect(step.input).toEqual({ spec: { type: "pie" } });
   });
 
   it("shows an unparseable spec exactly as the model sent it", () => {
-    const [step] = toToolSteps(assistant(toolPart("renderChart", { spec: "{oops" }, failed(false))));
+    const [step] = toToolSteps(
+      assistant(toolPart("renderChart", { spec: "{oops" }, failed(false))),
+    );
     expect(step.input).toEqual({ spec: "{oops" });
   });
 });
 
 describe("chartsOf", () => {
   it("collects successful charts", () => {
-    const msg = assistant(toolPart("renderChart", {}, { ok: true, summary: "Drew", chart: barChart }));
+    const msg = assistant(
+      toolPart(
+        "renderChart",
+        {},
+        { ok: true, summary: "Drew", chart: barChart },
+      ),
+    );
     const { charts, chartFailed } = chartsOf(msg);
     expect(charts.map((c) => c.chart)).toEqual([barChart]);
     expect(charts[0].id).toEqual(expect.any(String)); // stable React key
@@ -131,12 +189,20 @@ describe("chartsOf", () => {
   });
 
   it("flags a failure only when the model gave up without any chart", () => {
-    expect(chartsOf(assistant(toolPart("renderChart", {}, failed(false)))).chartFailed).toBe(false);
-    expect(chartsOf(assistant(toolPart("renderChart", {}, failed(true)))).chartFailed).toBe(true);
+    expect(
+      chartsOf(assistant(toolPart("renderChart", {}, failed(false))))
+        .chartFailed,
+    ).toBe(false);
+    expect(
+      chartsOf(assistant(toolPart("renderChart", {}, failed(true))))
+        .chartFailed,
+    ).toBe(true);
   });
 
   it("ignores malformed outputs instead of crashing", () => {
-    expect(chartsOf(assistant(toolPart("renderChart", {}, "garbage")))).toEqual({ charts: [], chartFailed: false });
+    expect(chartsOf(assistant(toolPart("renderChart", {}, "garbage")))).toEqual(
+      { charts: [], chartFailed: false },
+    );
   });
 });
 
@@ -152,13 +218,29 @@ describe("ShowTheWork", () => {
     render(
       <ShowTheWork
         steps={[
-          { id: "1", name: "listMetrics", input: { tier: "Gold" }, status: "done", result: "4 metrics" },
-          { id: "2", name: "renderChart", input: {}, status: "error", result: "Chart invalid" },
+          {
+            id: "1",
+            name: "listMetrics",
+            input: { tier: "Gold" },
+            status: "done",
+            result: "4 metrics",
+          },
+          {
+            id: "2",
+            name: "renderChart",
+            input: {},
+            status: "error",
+            result: "Chart invalid",
+          },
         ]}
       />,
     );
-    expect(screen.getByText("Show the work (2 tool calls)")).toBeInTheDocument();
-    expect(screen.getByLabelText("listMetrics input")).toHaveTextContent('{"tier":"Gold"}');
+    expect(
+      screen.getByText("Show the work (2 tool calls)"),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("listMetrics input")).toHaveTextContent(
+      '{"tier":"Gold"}',
+    );
     expect(screen.getByText(/4 metrics/)).toBeInTheDocument();
     expect(screen.getByText(/Error: Chart invalid/)).toBeInTheDocument();
   });
@@ -168,7 +250,9 @@ describe("AnswerChart", () => {
   it("bar: labels every bar with its change and verdict, not colour alone", () => {
     render(<AnswerChart chart={barChart} />);
     expect(screen.getByText("Change last month")).toBeInTheDocument();
-    const bars = within(screen.getByRole("list", { name: "Change from 2026-09 to 2026-10" }));
+    const bars = within(
+      screen.getByRole("list", { name: "Change from 2026-09 to 2026-10" }),
+    );
     const rows = bars.getAllByRole("listitem");
     expect(rows[0]).toHaveTextContent("Species-Rich Grassland−18.6 % worsened");
     expect(rows[1]).toHaveTextContent("Nitrogen Soil Surplus−3.4 % improved");
@@ -198,7 +282,11 @@ describe("AnswerChart", () => {
   });
 
   it("bullet: reuses the dashboard's read-only bullet chart rows", () => {
-    render(<AnswerChart chart={{ type: "bullet", title: "Now", kpis: mockKpis.slice(0, 2) }} />);
+    render(
+      <AnswerChart
+        chart={{ type: "bullet", title: "Now", kpis: mockKpis.slice(0, 2) }}
+      />,
+    );
     const rows = screen.getAllByTestId("kpi-row");
     expect(rows).toHaveLength(2);
     expect(rows[0]).toBeDisabled();

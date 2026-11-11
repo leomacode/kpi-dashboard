@@ -45,7 +45,9 @@ export async function loadKpiData(
     console.warn(
       `[api/ask] Supabase ${[!kpisOk && "kpis", !historyOk && "kpi_history"]
         .filter(Boolean)
-        .join(" and ")} unavailable; using mock data for it (see supabase/schema.sql)`,
+        .join(
+          " and ",
+        )} unavailable; using mock data for it (see supabase/schema.sql)`,
     );
   }
 

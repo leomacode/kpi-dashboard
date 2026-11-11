@@ -16,7 +16,11 @@ const errorsOf = (json: string) => {
   return r.ok ? [] : r.errors;
 };
 
-const LINE = JSON.stringify({ type: "line", title: "Ammonia", metricId: "kpi-5" });
+const LINE = JSON.stringify({
+  type: "line",
+  title: "Ammonia",
+  metricId: "kpi-5",
+});
 const BAR = JSON.stringify({
   type: "bar",
   title: "Last month",
@@ -32,7 +36,10 @@ describe("parseChartSpec", () => {
     expect(parseChartSpec(LINE, data).ok).toBe(true);
     expect(parseChartSpec(BAR, data).ok).toBe(true);
     expect(
-      parseChartSpec(JSON.stringify({ type: "bullet", title: "Now", metricIds: ["kpi-1"] }), data).ok,
+      parseChartSpec(
+        JSON.stringify({ type: "bullet", title: "Now", metricIds: ["kpi-1"] }),
+        data,
+      ).ok,
     ).toBe(true);
   });
 
@@ -45,18 +52,33 @@ describe("parseChartSpec", () => {
   });
 
   it("reports missing and extra fields with their paths", () => {
-    const errors = errorsOf(JSON.stringify({ type: "line", title: "x", color: "red" }));
+    const errors = errorsOf(
+      JSON.stringify({ type: "line", title: "x", color: "red" }),
+    );
     expect(errors.some((e) => e.startsWith("metricId:"))).toBe(true);
     expect(errors.some((e) => e.includes("color"))).toBe(true);
   });
 
   it("rejects malformed months", () => {
-    const errors = errorsOf(JSON.stringify({ type: "line", title: "x", metricId: "kpi-1", from: "2026-13" }));
+    const errors = errorsOf(
+      JSON.stringify({
+        type: "line",
+        title: "x",
+        metricId: "kpi-1",
+        from: "2026-13",
+      }),
+    );
     expect(errors[0]).toMatch(/^from: Use YYYY-MM/);
   });
 
   it("rejects unknown metric ids and lists the valid ones", () => {
-    const errors = errorsOf(JSON.stringify({ type: "bullet", title: "x", metricIds: ["kpi-1", "kpi-42"] }));
+    const errors = errorsOf(
+      JSON.stringify({
+        type: "bullet",
+        title: "x",
+        metricIds: ["kpi-1", "kpi-42"],
+      }),
+    );
     expect(errors).toEqual([
       'metricIds.1: unknown metric id "kpi-42". Valid ids: kpi-1, kpi-2, kpi-3, kpi-4, kpi-5, kpi-6, kpi-7',
     ]);
@@ -64,7 +86,13 @@ describe("parseChartSpec", () => {
 
   it("rejects months outside the data and reversed ranges", () => {
     const errors = errorsOf(
-      JSON.stringify({ type: "line", title: "x", metricId: "kpi-1", from: "2026-10", to: "2024-01" }),
+      JSON.stringify({
+        type: "line",
+        title: "x",
+        metricId: "kpi-1",
+        from: "2026-10",
+        to: "2024-01",
+      }),
     );
     expect(errors).toEqual([
       "to: 2024-01 has no data; data covers 2025-11 to 2026-10",
@@ -75,7 +103,15 @@ describe("parseChartSpec", () => {
 
 describe("resolveChart", () => {
   it("fills a line chart from the data, not from the model", () => {
-    const r = parseChartSpec(JSON.stringify({ type: "line", title: "x", metricId: "kpi-5", from: "2026-09" }), data);
+    const r = parseChartSpec(
+      JSON.stringify({
+        type: "line",
+        title: "x",
+        metricId: "kpi-5",
+        from: "2026-09",
+      }),
+      data,
+    );
     if (!r.ok) throw new Error(r.errors.join());
     expect(resolveChart(r.spec, data)).toEqual({
       type: "line",
@@ -95,15 +131,35 @@ describe("resolveChart", () => {
     if (!r.ok) throw new Error(r.errors.join());
     const chart = resolveChart(r.spec, data);
     if (chart.type !== "bar") throw new Error("expected bar");
-    expect(chart.bars.map((b) => b.id)).toEqual(["kpi-6", "kpi-1", "kpi-4", "kpi-3", "kpi-5", "kpi-7", "kpi-2"]);
-    expect(chart.bars[0]).toEqual({ id: "kpi-6", name: "Species-Rich Grassland", changePct: -18.58, verdict: "worsened" });
+    expect(chart.bars.map((b) => b.id)).toEqual([
+      "kpi-6",
+      "kpi-1",
+      "kpi-4",
+      "kpi-3",
+      "kpi-5",
+      "kpi-7",
+      "kpi-2",
+    ]);
+    expect(chart.bars[0]).toEqual({
+      id: "kpi-6",
+      name: "Species-Rich Grassland",
+      changePct: -18.58,
+      verdict: "worsened",
+    });
   });
 
   it("strips the long explanation text from bullet chart KPIs", () => {
-    const r = parseChartSpec(JSON.stringify({ type: "bullet", title: "x", metricIds: ["kpi-2"] }), data);
+    const r = parseChartSpec(
+      JSON.stringify({ type: "bullet", title: "x", metricIds: ["kpi-2"] }),
+      data,
+    );
     if (!r.ok) throw new Error(r.errors.join());
     const chart = resolveChart(r.spec, data);
-    expect(chart.type === "bullet" && chart.kpis[0]).toMatchObject({ id: "kpi-2", value: 17.5, explanation: "" });
+    expect(chart.type === "bullet" && chart.kpis[0]).toMatchObject({
+      id: "kpi-2",
+      value: 17.5,
+      explanation: "",
+    });
   });
 });
 
@@ -112,13 +168,26 @@ describe("resolveChart", () => {
 describe("createChartRenderer (retry loop)", () => {
   it("returns the chart on a valid first attempt", () => {
     const out = createChartRenderer(data)(LINE);
-    expect(out).toMatchObject({ ok: true, summary: 'Drew line chart "Ammonia"' });
+    expect(out).toMatchObject({
+      ok: true,
+      summary: 'Drew line chart "Ammonia"',
+    });
   });
 
   it("returns errors with attempts left, then succeeds on a corrected spec", () => {
     const render = createChartRenderer(data);
-    expect(render(BAD)).toMatchObject({ ok: false, attempt: 1, attemptsLeft: 2, gaveUp: false });
-    expect(render("{oops")).toMatchObject({ ok: false, attempt: 2, attemptsLeft: 1, gaveUp: false });
+    expect(render(BAD)).toMatchObject({
+      ok: false,
+      attempt: 1,
+      attemptsLeft: 2,
+      gaveUp: false,
+    });
+    expect(render("{oops")).toMatchObject({
+      ok: false,
+      attempt: 2,
+      attemptsLeft: 1,
+      gaveUp: false,
+    });
     expect(render(LINE)).toMatchObject({ ok: true });
   });
 
@@ -127,7 +196,12 @@ describe("createChartRenderer (retry loop)", () => {
     render(BAD);
     render(BAD);
     const third = render(BAD);
-    expect(third).toMatchObject({ ok: false, attempt: 3, attemptsLeft: 0, gaveUp: true });
+    expect(third).toMatchObject({
+      ok: false,
+      attempt: 3,
+      attemptsLeft: 0,
+      gaveUp: true,
+    });
     expect(third.summary).toMatch(/^Chart invalid 3\/3, giving up/);
   });
 
@@ -155,20 +229,36 @@ describe("createChartRenderer (retry loop)", () => {
 // ─── Retry loop inside the real agent loop (scripted model) ──────────────────
 
 const usage = {
-  inputTokens: { total: 1, noCache: 1, cacheRead: undefined, cacheWrite: undefined },
+  inputTokens: {
+    total: 1,
+    noCache: 1,
+    cacheRead: undefined,
+    cacheWrite: undefined,
+  },
   outputTokens: { total: 1, text: 1, reasoning: undefined },
 };
 
 // A fake model that plays back one scripted step per call: either a
 // renderChart call with the given spec, or a final text answer.
 type StreamPart =
-  Awaited<ReturnType<MockLanguageModelV4["doStream"]>>["stream"] extends ReadableStream<infer P>
+  Awaited<
+    ReturnType<MockLanguageModelV4["doStream"]>
+  >["stream"] extends ReadableStream<infer P>
     ? P
     : never;
 
 const toolStep = (call: number, spec: string): StreamPart[] => [
-  { type: "tool-call", toolCallId: `c${call}`, toolName: "renderChart", input: JSON.stringify({ spec }) },
-  { type: "finish", finishReason: { unified: "tool-calls", raw: undefined }, usage },
+  {
+    type: "tool-call",
+    toolCallId: `c${call}`,
+    toolName: "renderChart",
+    input: JSON.stringify({ spec }),
+  },
+  {
+    type: "finish",
+    finishReason: { unified: "tool-calls", raw: undefined },
+    usage,
+  },
 ];
 
 const textStep = (text: string): StreamPart[] => [
@@ -183,11 +273,16 @@ function scriptedModel(steps: (string | { text: string })[]) {
   const model = new MockLanguageModelV4({
     doStream: async () => {
       const step = steps[call++];
-      const chunks = typeof step === "string" ? toolStep(call, step) : textStep(step.text);
+      const chunks =
+        typeof step === "string" ? toolStep(call, step) : textStep(step.text);
       return { stream: simulateReadableStream({ chunks }) };
     },
   });
-  return { model, calls: () => call, prompts: () => model.doStreamCalls.map((c) => c.prompt) };
+  return {
+    model,
+    calls: () => call,
+    prompts: () => model.doStreamCalls.map((c) => c.prompt),
+  };
 }
 
 async function runScript(steps: (string | { text: string })[]) {
@@ -209,7 +304,12 @@ async function runScript(steps: (string | { text: string })[]) {
 
 describe("chart retry inside the agent loop", () => {
   it("feeds validation errors back to the model, which then fixes the spec", async () => {
-    const { outputs, text, scripted } = await runScript([BAD, "{oops", LINE, { text: "Here it is." }]);
+    const { outputs, text, scripted } = await runScript([
+      BAD,
+      "{oops",
+      LINE,
+      { text: "Here it is." },
+    ]);
 
     expect(outputs.map((o) => o.ok)).toEqual([false, false, true]);
     expect(text).toBe("Here it is.");
@@ -226,7 +326,12 @@ describe("chart retry inside the agent loop", () => {
   });
 
   it("stops after 3 failures and the model answers without a chart", async () => {
-    const { outputs, text } = await runScript([BAD, BAD, BAD, { text: "No chart, sorry." }]);
+    const { outputs, text } = await runScript([
+      BAD,
+      BAD,
+      BAD,
+      { text: "No chart, sorry." },
+    ]);
     expect(outputs).toHaveLength(3);
     expect(outputs[2]).toMatchObject({ ok: false, gaveUp: true });
     expect(text).toBe("No chart, sorry.");

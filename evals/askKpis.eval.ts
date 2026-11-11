@@ -39,30 +39,41 @@ type Run = {
 
 const runs: Run[] = [];
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const text = (p: string | RegExp) => (typeof p === "string" ? `"${p}"` : String(p));
+const text = (p: string | RegExp) =>
+  typeof p === "string" ? `"${p}"` : String(p);
 const has = (answer: string, p: string | RegExp) =>
-  typeof p === "string" ? answer.toLowerCase().includes(p.toLowerCase()) : p.test(answer);
+  typeof p === "string"
+    ? answer.toLowerCase().includes(p.toLowerCase())
+    : p.test(answer);
 
-function score(c: EvalCase, r: Omit<Run, "status" | "failures">, charts: RenderChartResult[]) {
+function score(
+  c: EvalCase,
+  r: Omit<Run, "status" | "failures">,
+  charts: RenderChartResult[],
+) {
   const failures: string[] = [];
   const called = new Set(r.toolCalls.map((t) => t.name));
   const inputs = JSON.stringify(r.toolCalls.map((t) => t.input));
 
   if (r.error) return [`error: ${r.error}`];
   if (!r.answer.trim()) failures.push("empty answer");
-  for (const t of c.tools ?? []) if (!called.has(t)) failures.push(`did not call ${t}`);
+  for (const t of c.tools ?? [])
+    if (!called.has(t)) failures.push(`did not call ${t}`);
   if (c.anyTool && !c.anyTool.some((t) => called.has(t))) {
     failures.push(`called none of ${c.anyTool.join(", ")}`);
   }
-  if (c.noTools && called.size > 0) failures.push(`called tools: ${[...called].join(", ")}`);
+  if (c.noTools && called.size > 0)
+    failures.push(`called tools: ${[...called].join(", ")}`);
   for (const s of c.inputIncludes ?? []) {
     if (!inputs.includes(s)) failures.push(`no tool input contains "${s}"`);
   }
   if (c.chart && !charts.some((o) => o.ok && o.chart.type === c.chart)) {
     failures.push(`no valid ${c.chart} chart`);
   }
-  for (const p of c.includes ?? []) if (!has(r.answer, p)) failures.push(`answer lacks ${text(p)}`);
-  for (const p of c.excludes ?? []) if (has(r.answer, p)) failures.push(`answer contains ${text(p)}`);
+  for (const p of c.includes ?? [])
+    if (!has(r.answer, p)) failures.push(`answer lacks ${text(p)}`);
+  for (const p of c.excludes ?? [])
+    if (has(r.answer, p)) failures.push(`answer contains ${text(p)}`);
   return failures;
 }
 
@@ -90,7 +101,9 @@ describe(`Ask your KPIs eval (${MODEL})`, () => {
       } catch (e) {
         error ??= e instanceof Error ? e.message : String(e);
       }
-      const toolCalls = steps.flatMap((s) => s.toolCalls.map((t) => ({ name: t.toolName, input: t.input })));
+      const toolCalls = steps.flatMap((s) =>
+        s.toolCalls.map((t) => ({ name: t.toolName, input: t.input })),
+      );
       const charts = steps
         .flatMap((s) => s.toolResults)
         .filter((t) => t.toolName === "renderChart")
@@ -108,7 +121,11 @@ describe(`Ask your KPIs eval (${MODEL})`, () => {
         error,
       };
       const failures = score(c, run, charts);
-      runs.push({ ...run, status: run.error ? "error" : failures.length ? "fail" : "pass", failures });
+      runs.push({
+        ...run,
+        status: run.error ? "error" : failures.length ? "fail" : "pass",
+        failures,
+      });
 
       expect(failures, `answer: ${answer}`).toEqual([]);
     });
@@ -116,8 +133,10 @@ describe(`Ask your KPIs eval (${MODEL})`, () => {
 
   afterAll(() => {
     if (runs.length === 0) return;
-    const count = (s: Run["status"]) => runs.filter((r) => r.status === s).length;
-    const avg = (f: (r: Run) => number) => Math.round((runs.reduce((a, r) => a + f(r), 0) / runs.length) * 10) / 10;
+    const count = (s: Run["status"]) =>
+      runs.filter((r) => r.status === s).length;
+    const avg = (f: (r: Run) => number) =>
+      Math.round((runs.reduce((a, r) => a + f(r), 0) / runs.length) * 10) / 10;
     const summary = {
       model: MODEL,
       date: new Date().toISOString(),
@@ -128,7 +147,10 @@ describe(`Ask your KPIs eval (${MODEL})`, () => {
       avgToolCalls: avg((r) => r.toolCalls.length),
       avgSteps: avg((r) => r.steps),
       avgSeconds: avg((r) => r.ms / 1000),
-      chartRetries: runs.reduce((a, r) => a + Math.max(0, r.chartAttempts - 1), 0),
+      chartRetries: runs.reduce(
+        (a, r) => a + Math.max(0, r.chartAttempts - 1),
+        0,
+      ),
     };
 
     console.table(
@@ -144,6 +166,9 @@ describe(`Ask your KPIs eval (${MODEL})`, () => {
     console.log(summary);
 
     mkdirSync("evals/results", { recursive: true });
-    writeFileSync("evals/results/latest.json", JSON.stringify({ summary, runs }, null, 2) + "\n");
+    writeFileSync(
+      "evals/results/latest.json",
+      JSON.stringify({ summary, runs }, null, 2) + "\n",
+    );
   });
 });

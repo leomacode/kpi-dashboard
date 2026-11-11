@@ -17,7 +17,8 @@ type Model = ReturnType<typeof registry.languageModel>;
 // small (gemini-3.5-flash: 20 requests/day), so the default is a chain: the
 // stronger model first, then flash-lite once its quota or capacity runs out.
 // Pinned versions, not "-latest" aliases, so eval results stay comparable.
-export const DEFAULT_MODEL = "google:gemini-3.5-flash,google:gemini-3.5-flash-lite";
+export const DEFAULT_MODEL =
+  "google:gemini-3.5-flash,google:gemini-3.5-flash-lite";
 
 const isModelId = (id: string): id is ModelId =>
   /^(google|anthropic|openai):.+$/.test(id);
@@ -70,8 +71,10 @@ export function getModel(
   return wrapLanguageModel({
     model: models[0],
     middleware: {
-      wrapStream: ({ params }) => withFallback(models, (m) => m.doStream(params)),
-      wrapGenerate: ({ params }) => withFallback(models, (m) => m.doGenerate(params)),
+      wrapStream: ({ params }) =>
+        withFallback(models, (m) => m.doStream(params)),
+      wrapGenerate: ({ params }) =>
+        withFallback(models, (m) => m.doGenerate(params)),
     },
   });
 }

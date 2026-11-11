@@ -33,7 +33,9 @@ const AnswerChart = ({ chart }: Props) => {
             rows: chart.kpis.map((k) => [
               k.name,
               `${formatValue(k.value)} ${k.unit}`,
-              k.planValue == null ? "-" : `${formatValue(k.planValue)} ${k.unit}`,
+              k.planValue == null
+                ? "-"
+                : `${formatValue(k.planValue)} ${k.unit}`,
               k.plateauLabel,
             ]),
           }}

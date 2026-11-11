@@ -16,7 +16,10 @@ export function toWireMessages(messages: UIMessage[]): WireMessage[] {
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
       role: m.role as WireMessage["role"],
-      text: textOf(m).slice(0, m.role === "user" ? ASK_LIMITS.questionChars : ASK_LIMITS.answerChars),
+      text: textOf(m).slice(
+        0,
+        m.role === "user" ? ASK_LIMITS.questionChars : ASK_LIMITS.answerChars,
+      ),
     }))
     .filter((m) => m.text.length > 0)
     .slice(-ASK_LIMITS.messages);
@@ -27,6 +30,12 @@ export function toWireMessages(messages: UIMessage[]): WireMessage[] {
 // when the API isn't running, a network failure — gets a generic line.
 export function describeError(error: Error): string {
   const msg = error.message.trim();
-  if (error.name !== "TypeError" && msg && msg.length <= 200 && !msg.startsWith("<")) return msg;
+  if (
+    error.name !== "TypeError" &&
+    msg &&
+    msg.length <= 200 &&
+    !msg.startsWith("<")
+  )
+    return msg;
   return "The assistant is unavailable right now. Please try again later.";
 }

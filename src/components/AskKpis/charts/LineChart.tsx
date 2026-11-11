@@ -35,8 +35,12 @@ const LineChart = ({ chart }: Props) => {
   const yMax = hi + pad;
 
   const x = (i: number) =>
-    PAD.left + (points.length === 1 ? 0 : (i / (points.length - 1)) * (W - PAD.left - PAD.right));
-  const y = (v: number) => PAD.top + (1 - (v - yMin) / (yMax - yMin)) * (H - PAD.top - PAD.bottom);
+    PAD.left +
+    (points.length === 1
+      ? 0
+      : (i / (points.length - 1)) * (W - PAD.left - PAD.right));
+  const y = (v: number) =>
+    PAD.top + (1 - (v - yMin) / (yMax - yMin)) * (H - PAD.top - PAD.bottom);
 
   const ticks = [lo, (lo + hi) / 2, hi];
   const last = points[points.length - 1];
@@ -45,7 +49,9 @@ const LineChart = ({ chart }: Props) => {
 
   const description =
     `Line chart of ${chart.name} in ${unit}, ${points[0].month} to ${last.month}: ` +
-    points.map((p) => `${monthLabel(p.month)} ${formatValue(p.value)}`).join(", ") +
+    points
+      .map((p) => `${monthLabel(p.month)} ${formatValue(p.value)}`)
+      .join(", ") +
     (plan == null ? "." : `. Plan ${formatValue(plan)}.`);
 
   return (
@@ -59,8 +65,20 @@ const LineChart = ({ chart }: Props) => {
       <StyledSvg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={description}>
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} stroke="var(--chart-grid)" />
-            <text x={PAD.left - 8} y={y(t)} dy="0.32em" textAnchor="end" fill="var(--color-text-secondary)">
+            <line
+              x1={PAD.left}
+              x2={W - PAD.right}
+              y1={y(t)}
+              y2={y(t)}
+              stroke="var(--chart-grid)"
+            />
+            <text
+              x={PAD.left - 8}
+              y={y(t)}
+              dy="0.32em"
+              textAnchor="end"
+              fill="var(--color-text-secondary)"
+            >
               {formatValue(t)}
             </text>
           </g>
@@ -68,7 +86,13 @@ const LineChart = ({ chart }: Props) => {
 
         {points.map((p, i) =>
           i % step === 0 || i === points.length - 1 ? (
-            <text key={p.month} x={x(i)} y={H - 8} textAnchor="middle" fill="var(--color-text-secondary)">
+            <text
+              key={p.month}
+              x={x(i)}
+              y={H - 8}
+              textAnchor="middle"
+              fill="var(--color-text-secondary)"
+            >
               {monthLabel(p.month)}
             </text>
           ) : null,
@@ -84,7 +108,12 @@ const LineChart = ({ chart }: Props) => {
               stroke="var(--color-text-secondary)"
               strokeDasharray="4 4"
             />
-            <text x={W - PAD.right + 6} y={y(plan)} dy="0.32em" fill="var(--color-text-secondary)">
+            <text
+              x={W - PAD.right + 6}
+              y={y(plan)}
+              dy="0.32em"
+              fill="var(--color-text-secondary)"
+            >
               Plan {formatValue(plan)}
             </text>
           </g>

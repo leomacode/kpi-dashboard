@@ -6,14 +6,29 @@ type Chunk = Record<string, unknown>;
 
 export type ToolCall = { name: string; input: unknown; output: unknown };
 
-export function agentStream({ tools = [], text }: { tools?: ToolCall[]; text: string }): string {
+export function agentStream({
+  tools = [],
+  text,
+}: {
+  tools?: ToolCall[];
+  text: string;
+}): string {
   const chunks: Chunk[] = [{ type: "start" }];
 
   tools.forEach((t, i) => {
     chunks.push(
       { type: "start-step" },
-      { type: "tool-input-available", toolCallId: `call-${i}`, toolName: t.name, input: t.input },
-      { type: "tool-output-available", toolCallId: `call-${i}`, output: t.output },
+      {
+        type: "tool-input-available",
+        toolCallId: `call-${i}`,
+        toolName: t.name,
+        input: t.input,
+      },
+      {
+        type: "tool-output-available",
+        toolCallId: `call-${i}`,
+        output: t.output,
+      },
       { type: "finish-step" },
     );
   });
@@ -29,7 +44,10 @@ export function agentStream({ tools = [], text }: { tools?: ToolCall[]; text: st
     { type: "finish" },
   );
 
-  return chunks.map((c) => `data: ${JSON.stringify(c)}\n\n`).join("") + "data: [DONE]\n\n";
+  return (
+    chunks.map((c) => `data: ${JSON.stringify(c)}\n\n`).join("") +
+    "data: [DONE]\n\n"
+  );
 }
 
 export const STREAM_HEADERS = {
@@ -65,9 +83,24 @@ export const droppedMost = agentStream({
           periodA: "2026-09",
           periodB: "2026-10",
           bars: [
-            { id: "kpi-6", name: "Species-Rich Grassland", changePct: -18.58, verdict: "worsened" },
-            { id: "kpi-4", name: "Nitrogen Soil Surplus", changePct: -3.39, verdict: "improved" },
-            { id: "kpi-2", name: "Bulk Milk Urea", changePct: 1.74, verdict: "worsened" },
+            {
+              id: "kpi-6",
+              name: "Species-Rich Grassland",
+              changePct: -18.58,
+              verdict: "worsened",
+            },
+            {
+              id: "kpi-4",
+              name: "Nitrogen Soil Surplus",
+              changePct: -3.39,
+              verdict: "improved",
+            },
+            {
+              id: "kpi-2",
+              name: "Bulk Milk Urea",
+              changePct: 1.74,
+              verdict: "worsened",
+            },
           ],
         },
       },
@@ -97,4 +130,6 @@ export const chartGaveUp = agentStream({
   text: "Ammonia emissions fell from 58 to 50.9 kg NH3/ha over the year.",
 });
 
-export const simpleAnswer = agentStream({ text: "Four metrics are in the Gold tier." });
+export const simpleAnswer = agentStream({
+  text: "Four metrics are in the Gold tier.",
+});

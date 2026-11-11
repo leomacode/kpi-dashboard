@@ -20,7 +20,8 @@ const summaryOf = (output: unknown): string =>
 
 // renderChart takes its chart config as a JSON string; show it as an object.
 function displayInput(input: unknown): unknown {
-  if (typeof input !== "object" || input === null || !("spec" in input)) return input;
+  if (typeof input !== "object" || input === null || !("spec" in input))
+    return input;
   if (typeof input.spec !== "string") return input;
   try {
     return { spec: JSON.parse(input.spec) };
@@ -31,7 +32,11 @@ function displayInput(input: unknown): unknown {
 
 export function toToolSteps(message: UIMessage): ToolStep[] {
   return message.parts.filter(isToolUIPart).map((part) => {
-    const base = { id: part.toolCallId, name: getToolName(part), input: displayInput(part.input) };
+    const base = {
+      id: part.toolCallId,
+      name: getToolName(part),
+      input: displayInput(part.input),
+    };
     switch (part.state) {
       case "output-available": {
         // A tool can run fine yet report failure, e.g. an invalid chart spec.
@@ -40,7 +45,11 @@ export function toToolSteps(message: UIMessage): ToolStep[] {
           part.output !== null &&
           "ok" in part.output &&
           part.output.ok === false;
-        return { ...base, status: failed ? "error" : "done", result: summaryOf(part.output) };
+        return {
+          ...base,
+          status: failed ? "error" : "done",
+          result: summaryOf(part.output),
+        };
       }
       case "output-error":
         return { ...base, status: "error", result: part.errorText };
@@ -63,10 +72,20 @@ export function chartsOf(message: UIMessage): {
 } {
   const results = message.parts
     .filter(isToolUIPart)
-    .filter((p) => getToolName(p) === "renderChart" && p.state === "output-available")
-    .flatMap((p) => (isRenderChartResult(p.output) ? [{ id: p.toolCallId, result: p.output }] : []));
+    .filter(
+      (p) => getToolName(p) === "renderChart" && p.state === "output-available",
+    )
+    .flatMap((p) =>
+      isRenderChartResult(p.output)
+        ? [{ id: p.toolCallId, result: p.output }]
+        : [],
+    );
 
-  const charts = results.flatMap(({ id, result }) => (result.ok ? [{ id, chart: result.chart }] : []));
-  const chartFailed = charts.length === 0 && results.some(({ result }) => !result.ok && result.gaveUp);
+  const charts = results.flatMap(({ id, result }) =>
+    result.ok ? [{ id, chart: result.chart }] : [],
+  );
+  const chartFailed =
+    charts.length === 0 &&
+    results.some(({ result }) => !result.ok && result.gaveUp);
   return { charts, chartFailed };
 }

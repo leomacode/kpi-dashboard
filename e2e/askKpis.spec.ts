@@ -1,5 +1,10 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
-import { STREAM_HEADERS, chartGaveUp, droppedMost, simpleAnswer } from "./askKpisStream";
+import {
+  STREAM_HEADERS,
+  chartGaveUp,
+  droppedMost,
+  simpleAnswer,
+} from "./askKpisStream";
 
 // Every test mocks /api/ask — no real model is ever called (CI has no key,
 // and `vite preview` doesn't serve the API anyway).
@@ -7,7 +12,10 @@ import { STREAM_HEADERS, chartGaveUp, droppedMost, simpleAnswer } from "./askKpi
 const stream = (body: string) => (route: Route) =>
   route.fulfill({ status: 200, headers: STREAM_HEADERS, body });
 
-async function open(page: Page, ...responses: ((route: Route) => Promise<void>)[]) {
+async function open(
+  page: Page,
+  ...responses: ((route: Route) => Promise<void>)[]
+) {
   let call = 0;
   await page.route("**/api/ask", (route) => {
     const respond = responses[Math.min(call++, responses.length - 1)];
@@ -20,10 +28,14 @@ async function open(page: Page, ...responses: ((route: Route) => Promise<void>)[
 }
 
 test.describe("Ask your KPIs", () => {
-  test("answers an example question with a chart and the work shown", async ({ page }) => {
+  test("answers an example question with a chart and the work shown", async ({
+    page,
+  }) => {
     const panel = await open(page, stream(droppedMost));
 
-    await panel.getByRole("button", { name: "Which metric dropped most last month?" }).click();
+    await panel
+      .getByRole("button", { name: "Which metric dropped most last month?" })
+      .click();
 
     const log = panel.getByRole("list", { name: "Conversation" });
     await expect(log).toContainText("Species-Rich Grassland dropped most");
@@ -31,15 +43,23 @@ test.describe("Ask your KPIs", () => {
 
     const chart = panel.getByTestId("answer-chart");
     await expect(chart).toContainText("Change from September to October");
-    await expect(chart.getByRole("listitem").first()).toContainText("Species-Rich Grassland−18.6 % worsened");
+    await expect(chart.getByRole("listitem").first()).toContainText(
+      "Species-Rich Grassland−18.6 % worsened",
+    );
 
     // Example questions disappear once the conversation starts.
-    await expect(panel.getByRole("list", { name: "Example questions" })).toHaveCount(0);
+    await expect(
+      panel.getByRole("list", { name: "Example questions" }),
+    ).toHaveCount(0);
   });
 
-  test("'Show the work' expands with the keyboard and lists every tool call", async ({ page }) => {
+  test("'Show the work' expands with the keyboard and lists every tool call", async ({
+    page,
+  }) => {
     const panel = await open(page, stream(droppedMost));
-    await panel.getByRole("button", { name: "Which metric dropped most last month?" }).click();
+    await panel
+      .getByRole("button", { name: "Which metric dropped most last month?" })
+      .click();
 
     const work = panel.getByTestId("show-the-work");
     const summary = work.getByText("Show the work (2 tool calls)");
@@ -50,9 +70,13 @@ test.describe("Ask your KPIs", () => {
     await page.keyboard.press("Enter");
 
     await expect(work.getByText("comparePeriods")).toBeVisible();
-    await expect(work.getByLabel("comparePeriods input")).toContainText('"periodA":{"from":"2026-09"}');
+    await expect(work.getByLabel("comparePeriods input")).toContainText(
+      '"periodA":{"from":"2026-09"}',
+    );
     await expect(work).toContainText("7 metrics: 2026-09 vs 2026-10");
-    await expect(work).toContainText('Drew bar chart "Change from September to October"');
+    await expect(work).toContainText(
+      'Drew bar chart "Change from September to October"',
+    );
   });
 
   test("sends only plain-text history to the API", async ({ page }) => {
@@ -79,7 +103,9 @@ test.describe("Ask your KPIs", () => {
     });
   });
 
-  test("shows a clear note when the chart fails validation 3 times", async ({ page }) => {
+  test("shows a clear note when the chart fails validation 3 times", async ({
+    page,
+  }) => {
     const panel = await open(page, stream(chartGaveUp));
     await panel.getByLabel("Your question").fill("How did ammonia develop?");
     await panel.getByRole("button", { name: "Ask" }).click();
@@ -91,10 +117,14 @@ test.describe("Ask your KPIs", () => {
     await expect(panel.getByTestId("answer-chart")).toHaveCount(0);
 
     await panel.getByText("Show the work (3 tool calls)").click();
-    await expect(panel.getByTestId("show-the-work")).toContainText("Chart invalid 3/3, giving up");
+    await expect(panel.getByTestId("show-the-work")).toContainText(
+      "Chart invalid 3/3, giving up",
+    );
   });
 
-  test("shows the rate-limit message and recovers with Try again", async ({ page }) => {
+  test("shows the rate-limit message and recovers with Try again", async ({
+    page,
+  }) => {
     const panel = await open(
       page,
       (route) =>
@@ -110,7 +140,9 @@ test.describe("Ask your KPIs", () => {
     await panel.getByLabel("Your question").press("Enter");
 
     const alert = panel.getByRole("alert");
-    await expect(alert).toHaveText(/Too many questions\. Please wait 42 s and try again\./);
+    await expect(alert).toHaveText(
+      /Too many questions\. Please wait 42 s and try again\./,
+    );
 
     await alert.getByRole("button", { name: "Try again" }).click();
     await expect(panel).toContainText("Four metrics are in the Gold tier.");
@@ -119,15 +151,23 @@ test.describe("Ask your KPIs", () => {
 
   test("hides raw error pages behind a generic message", async ({ page }) => {
     const panel = await open(page, (route) =>
-      route.fulfill({ status: 404, contentType: "text/html", body: "<!doctype html><h1>Not found</h1>" }),
+      route.fulfill({
+        status: 404,
+        contentType: "text/html",
+        body: "<!doctype html><h1>Not found</h1>",
+      }),
     );
-    await panel.getByRole("button", { name: "Which KPIs are behind their plan?" }).click();
+    await panel
+      .getByRole("button", { name: "Which KPIs are behind their plan?" })
+      .click();
     await expect(panel.getByRole("alert")).toContainText(
       "The assistant is unavailable right now. Please try again later.",
     );
   });
 
-  test("Ask is disabled for empty input and the input caps at 500 characters", async ({ page }) => {
+  test("Ask is disabled for empty input and the input caps at 500 characters", async ({
+    page,
+  }) => {
     const panel = await open(page, stream(simpleAnswer));
     const ask = panel.getByRole("button", { name: "Ask" });
     const input = panel.getByLabel("Your question");
@@ -141,16 +181,24 @@ test.describe("Ask your KPIs", () => {
     await expect(panel).toContainText("500/500 characters");
   });
 
-  test("New chat clears the conversation and returns focus to the input", async ({ page }) => {
+  test("New chat clears the conversation and returns focus to the input", async ({
+    page,
+  }) => {
     const panel = await open(page, stream(simpleAnswer));
-    await panel.getByRole("button", { name: "Which KPIs are behind their plan?" }).click();
+    await panel
+      .getByRole("button", { name: "Which KPIs are behind their plan?" })
+      .click();
     await expect(panel).toContainText("Four metrics are in the Gold tier.");
 
     await panel.getByRole("button", { name: "New chat" }).click();
 
     await expect(panel).not.toContainText("Four metrics are in the Gold tier.");
-    await expect(panel.getByRole("button", { name: "New chat" })).toHaveCount(0);
-    await expect(panel.getByRole("list", { name: "Example questions" })).toBeVisible();
+    await expect(panel.getByRole("button", { name: "New chat" })).toHaveCount(
+      0,
+    );
+    await expect(
+      panel.getByRole("list", { name: "Example questions" }),
+    ).toBeVisible();
     await expect(panel.getByLabel("Your question")).toBeFocused();
   });
 });

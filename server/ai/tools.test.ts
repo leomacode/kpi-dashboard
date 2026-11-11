@@ -13,7 +13,11 @@ const tools = createTools(data);
 // Call a tool's execute() the way the agent loop would.
 async function run<I, O>(t: Tool<I, O>, input: I): Promise<O> {
   if (!t.execute) throw new Error("tool has no execute");
-  return (await t.execute(input, { toolCallId: "test", messages: [], context: {} })) as O;
+  return (await t.execute(input, {
+    toolCallId: "test",
+    messages: [],
+    context: {},
+  })) as O;
 }
 
 const kpi = (id: string) => findKpi(data.kpis, id)!;
@@ -34,7 +38,9 @@ describe("findKpi", () => {
 describe("averageInPeriod", () => {
   it("averages the months in an inclusive range", () => {
     // Nitrogen Farm Surplus Q1 2026: 135, 131, 128
-    expect(averageInPeriod(data, "kpi-3", { from: "2026-01", to: "2026-03" })).toBeCloseTo(131.333, 3);
+    expect(
+      averageInPeriod(data, "kpi-3", { from: "2026-01", to: "2026-03" }),
+    ).toBeCloseTo(131.333, 3);
   });
 
   it("treats a missing `to` as a single month", () => {
@@ -52,7 +58,12 @@ describe("compareKpi", () => {
 
   it("rounds away float noise", () => {
     const c = compareKpi(data, kpi("kpi-6"), sep, oct)!;
-    expect(c).toMatchObject({ a: 22.6, b: 18.4, change: -4.2, changePct: -18.58 });
+    expect(c).toMatchObject({
+      a: 22.6,
+      b: 18.4,
+      change: -4.2,
+      changePct: -18.58,
+    });
   });
 
   it("calls a decrease 'worsened' for higher-is-better metrics", () => {
@@ -70,7 +81,10 @@ describe("compareKpi", () => {
   });
 
   it("reports 'unchanged' when the value is flat", () => {
-    expect(compareKpi(data, kpi("kpi-7"), sep, oct)).toMatchObject({ change: 0, verdict: "unchanged" });
+    expect(compareKpi(data, kpi("kpi-7"), sep, oct)).toMatchObject({
+      change: 0,
+      verdict: "unchanged",
+    });
   });
 
   it("returns null changePct when the base value is zero", () => {
@@ -81,7 +95,10 @@ describe("compareKpi", () => {
         { kpiId: "kpi-1", month: "2026-02", value: 5 },
       ],
     };
-    expect(compareKpi(zero, kpi("kpi-1"), { from: "2026-01" }, { from: "2026-02" })?.changePct).toBeNull();
+    expect(
+      compareKpi(zero, kpi("kpi-1"), { from: "2026-01" }, { from: "2026-02" })
+        ?.changePct,
+    ).toBeNull();
   });
 });
 
@@ -97,16 +114,32 @@ describe("listMetrics", () => {
 
   it("filters by tier and directionality", async () => {
     const gold = await run(tools.listMetrics, { tier: "Gold" });
-    expect(gold.metrics.map((m) => m.id)).toEqual(["kpi-1", "kpi-2", "kpi-4", "kpi-6"]);
+    expect(gold.metrics.map((m) => m.id)).toEqual([
+      "kpi-1",
+      "kpi-2",
+      "kpi-4",
+      "kpi-6",
+    ]);
 
-    const lower = await run(tools.listMetrics, { directionality: "lower-is-better" });
-    expect(lower.metrics.map((m) => m.id)).toEqual(["kpi-2", "kpi-3", "kpi-4", "kpi-5"]);
+    const lower = await run(tools.listMetrics, {
+      directionality: "lower-is-better",
+    });
+    expect(lower.metrics.map((m) => m.id)).toEqual([
+      "kpi-2",
+      "kpi-3",
+      "kpi-4",
+      "kpi-5",
+    ]);
   });
 });
 
 describe("queryMetric", () => {
   it("returns the monthly series within the range", async () => {
-    const out = await run(tools.queryMetric, { metric: "kpi-5", from: "2026-08", to: "2026-10" });
+    const out = await run(tools.queryMetric, {
+      metric: "kpi-5",
+      from: "2026-08",
+      to: "2026-10",
+    });
     if (!("points" in out)) throw new Error(out.error);
     expect(out.points).toEqual([
       { month: "2026-08", value: 51.5 },
@@ -137,7 +170,10 @@ describe("comparePeriods", () => {
     });
     if (!("comparisons" in out)) throw new Error(out.error);
     expect(out.comparisons).toHaveLength(7);
-    expect(out.comparisons[0]).toMatchObject({ id: "kpi-6", changePct: -18.58 });
+    expect(out.comparisons[0]).toMatchObject({
+      id: "kpi-6",
+      changePct: -18.58,
+    });
     expect(out.comparisons[out.comparisons.length - 1].id).toBe("kpi-2"); // only increase
     expect(out.summary).toBe("7 metrics: 2026-09 vs 2026-10");
   });
@@ -150,7 +186,12 @@ describe("comparePeriods", () => {
     });
     if (!("comparisons" in out)) throw new Error(out.error);
     // Q1 (135, 131, 128) avg 131.33 → Q3 (113, 110, 108.4) avg 110.47
-    expect(out.comparisons[0]).toMatchObject({ a: 131.33, b: 110.47, change: -20.87, verdict: "improved" });
+    expect(out.comparisons[0]).toMatchObject({
+      a: 131.33,
+      b: 110.47,
+      change: -20.87,
+      verdict: "improved",
+    });
     expect(out.periodA).toBe("2026-01…2026-03");
   });
 

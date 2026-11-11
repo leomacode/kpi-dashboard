@@ -22,7 +22,9 @@ export const ChartSpec = z.discriminatedUnion("type", [
       title: Title,
       metricIds: z.array(MetricId).min(1).max(7),
     })
-    .describe("Current value vs tiers and plan, using the dashboard's bullet chart"),
+    .describe(
+      "Current value vs tiers and plan, using the dashboard's bullet chart",
+    ),
   z
     .strictObject({
       type: z.literal("line"),
@@ -36,7 +38,12 @@ export const ChartSpec = z.discriminatedUnion("type", [
     .strictObject({
       type: z.literal("bar"),
       title: Title,
-      metricIds: z.array(MetricId).min(1).max(7).optional().describe("Omit for all metrics"),
+      metricIds: z
+        .array(MetricId)
+        .min(1)
+        .max(7)
+        .optional()
+        .describe("Omit for all metrics"),
       periodA: Period,
       periodB: Period,
     })

@@ -50,7 +50,9 @@ export function createTools(data: KpiData) {
       description:
         "List the available metrics with id, unit, directionality, current value, plan target, tier, and the month range that has data. Optionally filter.",
       inputSchema: z.object({
-        directionality: z.enum(["higher-is-better", "lower-is-better"]).optional(),
+        directionality: z
+          .enum(["higher-is-better", "lower-is-better"])
+          .optional(),
         tier: z
           .enum(["Aspirant", "Bronze", "Silver", "Gold", "Platinum"])
           .optional()
@@ -85,7 +87,11 @@ export function createTools(data: KpiData) {
       description:
         "Compare metrics between period A (earlier) and period B (later). Omit `metrics` to compare all of them in one call. Results are sorted by changePct ascending (biggest relative decrease first). `verdict` accounts for directionality.",
       inputSchema: z.object({
-        metrics: z.array(MetricRef).min(1).optional().describe("Omit for all metrics"),
+        metrics: z
+          .array(MetricRef)
+          .min(1)
+          .optional()
+          .describe("Omit for all metrics"),
         periodA: Period,
         periodB: Period,
       }),

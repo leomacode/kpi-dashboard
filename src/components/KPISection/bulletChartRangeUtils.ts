@@ -48,8 +48,7 @@ const normalizeDirectionality = (
     .trim()
     .toLowerCase();
   if (!s) return null;
-  if (s === "lower-is-better" || s.includes("lower"))
-    return "lower-is-better";
+  if (s === "lower-is-better" || s.includes("lower")) return "lower-is-better";
   if (s === "higher-is-better" || s.includes("higher"))
     return "higher-is-better";
   return null;
@@ -332,7 +331,9 @@ export const getTierMetaByValue = (
   return { name: nameMap[key], colorKey: key };
 };
 
-export const buildBulletChartRanges = (kpi: KPIViewModel): BulletChartRanges => {
+export const buildBulletChartRanges = (
+  kpi: KPIViewModel,
+): BulletChartRanges => {
   const {
     domainMin,
     domainMax,

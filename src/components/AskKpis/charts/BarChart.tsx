@@ -94,24 +94,37 @@ const StyledSwatch = styled.span<{ $verdict: Verdict }>`
   background: ${(p) => COLOR[p.$verdict]};
 `;
 
-const pct = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${formatValue(Math.abs(n))} %`;
+const pct = (n: number) =>
+  `${n > 0 ? "+" : n < 0 ? "−" : ""}${formatValue(Math.abs(n))} %`;
 
 const BarChart = ({ chart }: Props) => {
   if (chart.bars.length === 0) return null;
-  const maxAbs = Math.max(...chart.bars.map((b) => Math.abs(b.changePct)), 0.01);
+  const maxAbs = Math.max(
+    ...chart.bars.map((b) => Math.abs(b.changePct)),
+    0.01,
+  );
   const verdicts = [...new Set(chart.bars.map((b) => b.verdict))];
 
   return (
     <ChartFrame
       title={chart.title}
       table={{
-        head: ["Metric", `Change ${chart.periodA} → ${chart.periodB}`, "Verdict"],
+        head: [
+          "Metric",
+          `Change ${chart.periodA} → ${chart.periodB}`,
+          "Verdict",
+        ],
         rows: chart.bars.map((b) => [b.name, pct(b.changePct), b.verdict]),
       }}
     >
-      <StyledRows aria-label={`Change from ${chart.periodA} to ${chart.periodB}`}>
+      <StyledRows
+        aria-label={`Change from ${chart.periodA} to ${chart.periodB}`}
+      >
         {chart.bars.map((b) => (
-          <StyledRow key={b.id} title={`${b.name}: ${pct(b.changePct)} (${b.verdict})`}>
+          <StyledRow
+            key={b.id}
+            title={`${b.name}: ${pct(b.changePct)} (${b.verdict})`}
+          >
             <StyledName>{b.name}</StyledName>
             <StyledTrack aria-hidden="true">
               <StyledBar

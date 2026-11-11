@@ -54,7 +54,9 @@ const StyledInput = styled.pre`
 
 const StyledResult = styled.div<{ $status: ToolStep["status"] }>`
   color: ${(p) =>
-    p.$status === "error" ? "var(--color-negative)" : "var(--color-text-secondary)"};
+    p.$status === "error"
+      ? "var(--color-negative)"
+      : "var(--color-text-secondary)"};
 `;
 
 // ─── Component ───────────────────────────────────────────────────────────────

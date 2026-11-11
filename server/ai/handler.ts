@@ -32,7 +32,10 @@ export const AskRequest = z.object({
     .min(1)
     .max(ASK_LIMITS.messages)
     // `?.`: Zod 4 still runs this refinement when .min(1) failed on [].
-    .refine((m) => m[m.length - 1]?.role === "user", "Last message must be from the user"),
+    .refine(
+      (m) => m[m.length - 1]?.role === "user",
+      "Last message must be from the user",
+    ),
 });
 
 export type AskRequest = z.infer<typeof AskRequest>;
@@ -79,13 +82,16 @@ const clientIp = (req: Request) =>
 export function createAskHandler(deps: {
   getModel: () => LanguageModel;
   loadData: () => Promise<KpiData>;
-  rateLimit: (key: string) => { ok: true } | { ok: false; retryAfterSec: number };
+  rateLimit: (
+    key: string,
+  ) => { ok: true } | { ok: false; retryAfterSec: number };
   log?: (error: unknown) => void;
 }) {
   const log = deps.log ?? ((e: unknown) => console.error("[api/ask]", e));
 
   return async function handleAsk(req: Request): Promise<Response> {
-    if (req.method !== "POST") return text(405, "Method not allowed", { allow: "POST" });
+    if (req.method !== "POST")
+      return text(405, "Method not allowed", { allow: "POST" });
 
     const limited = deps.rateLimit(clientIp(req));
     if (!limited.ok) {

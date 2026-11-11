@@ -33,7 +33,9 @@ export function averageInPeriod(
   const values = data.history
     .filter((p) => p.kpiId === kpiId && p.month >= from && p.month <= to)
     .map((p) => p.value);
-  return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+  return values.length
+    ? values.reduce((a, b) => a + b, 0) / values.length
+    : null;
 }
 
 export type Comparison = {
@@ -59,7 +61,8 @@ export function compareKpi(
   if (a === null || b === null) return null;
 
   const change = b - a;
-  const better = kpi.directionality === "higher-is-better" ? change > 0 : change < 0;
+  const better =
+    kpi.directionality === "higher-is-better" ? change > 0 : change < 0;
   return {
     id: kpi.id,
     name: kpi.name,

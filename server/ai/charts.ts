@@ -4,7 +4,13 @@ import {
   type RenderChartResult,
 } from "../../src/components/AskKpis/chartSchema.js";
 import type { KpiData } from "./data.js";
-import { compareKpi, findKpi, monthsWithData, periodLabel, type Period } from "./metrics.js";
+import {
+  compareKpi,
+  findKpi,
+  monthsWithData,
+  periodLabel,
+  type Period,
+} from "./metrics.js";
 
 export const MAX_CHART_ATTEMPTS = 3;
 
@@ -17,7 +23,10 @@ export function parseChartSpec(json: string, data: KpiData): Parsed {
   try {
     raw = JSON.parse(json);
   } catch (e) {
-    return { ok: false, errors: [`spec is not valid JSON: ${(e as Error).message}`] };
+    return {
+      ok: false,
+      errors: [`spec is not valid JSON: ${(e as Error).message}`],
+    };
   }
 
   const shape = ChartSpec.safeParse(raw);
@@ -39,16 +48,24 @@ export function parseChartSpec(json: string, data: KpiData): Parsed {
 
   const checkId = (path: string, id: string) => {
     if (!ids.has(id)) {
-      errors.push(`${path}: unknown metric id "${id}". Valid ids: ${[...ids].join(", ")}`);
+      errors.push(
+        `${path}: unknown metric id "${id}". Valid ids: ${[...ids].join(", ")}`,
+      );
     }
   };
   const checkRange = (path: string, from?: string, to?: string) => {
-    for (const [key, m] of [["from", from], ["to", to]] as const) {
+    for (const [key, m] of [
+      ["from", from],
+      ["to", to],
+    ] as const) {
       if (m && (m < first || m > last)) {
-        errors.push(`${path}${key}: ${m} has no data; data covers ${first} to ${last}`);
+        errors.push(
+          `${path}${key}: ${m} has no data; data covers ${first} to ${last}`,
+        );
       }
     }
-    if (from && to && from > to) errors.push(`${path}from: ${from} is after to: ${to}`);
+    if (from && to && from > to)
+      errors.push(`${path}from: ${from} is after to: ${to}`);
   };
 
   switch (spec.type) {
@@ -109,14 +126,22 @@ export function resolveChart(spec: ChartSpec, data: KpiData): ChartData {
         title: spec.title,
         periodA: periodLabel(a),
         periodB: periodLabel(b),
-        bars: kpis.flatMap((k) => {
-          const c = compareKpi(data, k, a, b);
-          return c && c.changePct !== null
-            ? [{ id: c.id, name: c.name, changePct: c.changePct, verdict: c.verdict }]
-            : [];
-        })
-        // Biggest relative drop first, matching comparePeriods.
-        .sort((x, y) => x.changePct - y.changePct),
+        bars: kpis
+          .flatMap((k) => {
+            const c = compareKpi(data, k, a, b);
+            return c && c.changePct !== null
+              ? [
+                  {
+                    id: c.id,
+                    name: c.name,
+                    changePct: c.changePct,
+                    verdict: c.verdict,
+                  },
+                ]
+              : [];
+          })
+          // Biggest relative drop first, matching comparePeriods.
+          .sort((x, y) => x.changePct - y.changePct),
       };
     }
   }
@@ -124,7 +149,10 @@ export function resolveChart(spec: ChartSpec, data: KpiData): ChartData {
 
 // One renderer per request: counts attempts so a model that keeps producing
 // invalid specs is stopped after MAX_CHART_ATTEMPTS and told to give up.
-export function createChartRenderer(data: KpiData, maxAttempts = MAX_CHART_ATTEMPTS) {
+export function createChartRenderer(
+  data: KpiData,
+  maxAttempts = MAX_CHART_ATTEMPTS,
+) {
   let attempts = 0;
 
   return (json: string): RenderChartResult => {
@@ -144,7 +172,11 @@ export function createChartRenderer(data: KpiData, maxAttempts = MAX_CHART_ATTEM
     if (parsed.ok) {
       attempts = 0; // a later, separate chart in the same answer starts fresh
       const chart = resolveChart(parsed.spec, data);
-      return { ok: true, summary: `Drew ${chart.type} chart "${chart.title}"`, chart };
+      return {
+        ok: true,
+        summary: `Drew ${chart.type} chart "${chart.title}"`,
+        chart,
+      };
     }
 
     const gaveUp = attempts >= maxAttempts;

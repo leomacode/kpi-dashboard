@@ -75,7 +75,9 @@ const StyledMessage = styled.li<{ $role: string }>`
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
   background: ${(p) =>
-    p.$role === "user" ? "var(--color-tabs-accent-bg)" : "var(--color-hover-bg)"};
+    p.$role === "user"
+      ? "var(--color-tabs-accent-bg)"
+      : "var(--color-hover-bg)"};
   border: 1px solid var(--color-border);
   font-size: 0.875rem;
   line-height: 1.375rem;
@@ -158,7 +160,8 @@ const StyledButton = styled.button<{ $variant?: "secondary" }>`
   border-radius: var(--radius-md);
   border: 1px solid
     ${(p) => (p.$variant ? "var(--color-border)" : "var(--color-accent)")};
-  background: ${(p) => (p.$variant ? "var(--color-bg-card)" : "var(--color-accent)")};
+  background: ${(p) =>
+    p.$variant ? "var(--color-bg-card)" : "var(--color-accent)"};
   color: ${(p) => (p.$variant ? "var(--color-text-primary)" : "#fff")};
   cursor: pointer;
 
@@ -202,7 +205,9 @@ const StyledSuggestions = styled.ul`
 // skip re-rendering on every token.
 const MessageItem = memo(({ message }: { message: UIMessage }) => {
   const isAssistant = message.role === "assistant";
-  const { charts, chartFailed } = isAssistant ? chartsOf(message) : { charts: [], chartFailed: false };
+  const { charts, chartFailed } = isAssistant
+    ? chartsOf(message)
+    : { charts: [], chartFailed: false };
   return (
     <StyledMessage $role={message.role}>
       <StyledSpeaker>{isAssistant ? "Assistant" : "You"}</StyledSpeaker>
@@ -299,7 +304,11 @@ const AskKpisPanel = () => {
       {error && (
         <StyledError role="alert">
           <span>{describeError(error)}</span>
-          <StyledButton type="button" $variant="secondary" onClick={() => regenerate()}>
+          <StyledButton
+            type="button"
+            $variant="secondary"
+            onClick={() => regenerate()}
+          >
             Try again
           </StyledButton>
         </StyledError>
@@ -309,7 +318,11 @@ const AskKpisPanel = () => {
         <StyledSuggestions aria-label="Example questions">
           {SUGGESTIONS.map((s) => (
             <li key={s}>
-              <StyledButton type="button" $variant="secondary" onClick={() => ask(s)}>
+              <StyledButton
+                type="button"
+                $variant="secondary"
+                onClick={() => ask(s)}
+              >
                 {s}
               </StyledButton>
             </li>
@@ -332,7 +345,11 @@ const AskKpisPanel = () => {
             onChange={(e) => setInput(e.target.value)}
           />
           {busy ? (
-            <StyledButton type="button" $variant="secondary" onClick={() => stop()}>
+            <StyledButton
+              type="button"
+              $variant="secondary"
+              onClick={() => stop()}
+            >
               Stop
             </StyledButton>
           ) : (

@@ -1,4 +1,9 @@
-import { isStepCount, streamText, type LanguageModel, type ModelMessage } from "ai";
+import {
+  isStepCount,
+  streamText,
+  type LanguageModel,
+  type ModelMessage,
+} from "ai";
 import type { KpiData } from "./data.js";
 import { createTools } from "./tools.js";
 
@@ -8,7 +13,11 @@ export const MAX_STEPS = 8;
 // Fail fast instead of leaving the UI spinning: an overloaded free-tier model
 // can stall a stream indefinitely. The serverless function stops long before
 // any platform limit.
-export const TIMEOUT = { totalMs: 45_000, firstChunkMs: 20_000, chunkMs: 15_000 };
+export const TIMEOUT = {
+  totalMs: 45_000,
+  firstChunkMs: 20_000,
+  chunkMs: 15_000,
+};
 
 export function buildInstructions(data: KpiData, today: Date): string {
   const months = [...new Set(data.history.map((p) => p.month))].sort();
@@ -20,7 +29,7 @@ export function buildInstructions(data: KpiData, today: Date): string {
     "Rules:",
     "- Use the tools for every number you state. Never guess or invent values.",
     "- Respect directionality: for lower-is-better metrics a decrease is an improvement.",
-    "- \"Dropped most\" means the largest relative decrease (%) unless the user asks otherwise; mention whether that is good or bad.",
+    '- "Dropped most" means the largest relative decrease (%) unless the user asks otherwise; mention whether that is good or bad.',
     "- When a chart helps (a trend, a comparison, current status vs tiers), call renderChart once after you have the facts: line for one metric over time, bar for change between periods, bullet for current value vs tiers and plan. Skip it for yes/no or single-number answers.",
     "- Always answer in text, even when you draw a chart: the chart is drawn below your answer and only supports it.",
     "- If a question is outside this data, say so briefly.",

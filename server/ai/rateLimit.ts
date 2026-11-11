@@ -19,7 +19,10 @@ export function createRateLimiter({
     const recent = (hits.get(key) ?? []).filter((ts) => t - ts < windowMs);
     if (recent.length >= limit) {
       hits.set(key, recent);
-      return { ok: false, retryAfterSec: Math.ceil((recent[0] + windowMs - t) / 1000) };
+      return {
+        ok: false,
+        retryAfterSec: Math.ceil((recent[0] + windowMs - t) / 1000),
+      };
     }
     recent.push(t);
     hits.set(key, recent);

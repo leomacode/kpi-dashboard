@@ -1,12 +1,13 @@
 import { PostgrestClient } from "@supabase/postgrest-js";
-import { mapToViewModel } from "../../src/components/KPISection/mappers.js";
+import {
+  parseHistoryRows,
+  parseKpiRows,
+} from "../../src/components/KPISection/mappers.js";
 import { mockKpis } from "../../src/components/KPISection/data/mockKpis.js";
 import { mockHistory } from "../../src/components/KPISection/data/mockHistory.js";
 import type {
   KPIViewModel,
   KpiHistoryPoint,
-  SupabaseKpi,
-  SupabaseKpiHistory,
 } from "../../src/components/KPISection/types.js";
 
 export type KpiData = {
@@ -39,26 +40,24 @@ export async function loadKpiData(
 
   // Each table falls back on its own: a project that hasn't created
   // kpi_history yet still answers with its real KPIs and plan targets.
-  const kpisOk = !kpis.error && kpis.data?.length;
-  const historyOk = !history.error && history.data?.length;
-  if (!kpisOk || !historyOk) {
+  // Rows are validated, not cast: a malformed table counts as unavailable.
+  const parsedKpis = kpis.error ? null : parseKpiRows(kpis.data);
+  const parsedHistory = history.error ? null : parseHistoryRows(history.data);
+  if (!parsedKpis || !parsedHistory) {
     console.warn(
-      `[api/ask] Supabase ${[!kpisOk && "kpis", !historyOk && "kpi_history"]
+      `[api/ask] Supabase ${[
+        !parsedKpis && "kpis",
+        !parsedHistory && "kpi_history",
+      ]
         .filter(Boolean)
         .join(
           " and ",
-        )} unavailable; using mock data for it (see supabase/schema.sql)`,
+        )} unavailable or invalid; using mock data for it (see supabase/schema.sql)`,
     );
   }
 
   return {
-    kpis: kpisOk ? (kpis.data as SupabaseKpi[]).map(mapToViewModel) : mockKpis,
-    history: historyOk
-      ? (history.data as SupabaseKpiHistory[]).map((row) => ({
-          kpiId: row.kpi_id,
-          month: row.month,
-          value: row.value,
-        }))
-      : mockHistory,
+    kpis: parsedKpis ?? mockKpis,
+    history: parsedHistory ?? mockHistory,
   };
 }

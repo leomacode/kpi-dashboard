@@ -32,59 +32,20 @@ const MIN_HEADROOM = 1;
 const clamp = (n: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, n));
 
-const toFinite = (v: unknown, fallback: number): number => {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = parseFloat(v.replace(",", "."));
-    return Number.isFinite(n) ? n : fallback;
-  }
-  return fallback;
-};
-
-const normalizeDirectionality = (
-  raw: unknown,
-): BulletChartDirectionality | null => {
-  const s = String(raw ?? "")
-    .trim()
-    .toLowerCase();
-  if (!s) return null;
-  if (s === "lower-is-better" || s.includes("lower")) return "lower-is-better";
-  if (s === "higher-is-better" || s.includes("higher"))
-    return "higher-is-better";
-  return null;
-};
-
-// Fallback: infer directionality from threshold order when the field is missing.
-// Descending thresholds (bronze ≥ silver ≥ gold ≥ platinum) indicate lower-is-better.
-const inferDirectionalityFromThresholds = (
-  kpi: KPIViewModel,
-  min: number,
-): BulletChartDirectionality => {
-  const b = toFinite(kpi.bronze, min);
-  const s = toFinite(kpi.silver, b);
-  const g = toFinite(kpi.gold, s);
-  const p = toFinite(kpi.platinum, g);
-  const isDescending = b >= s && s >= g && g >= p;
-  const hasSlope = b !== s || s !== g || g !== p;
-  if (isDescending && hasSlope) return "lower-is-better";
-  return "higher-is-better";
-};
-
-const getDirectionality = (kpi: KPIViewModel): BulletChartDirectionality => {
-  const normalized = normalizeDirectionality(kpi.directionality);
-  if (normalized) return normalized;
-  return inferDirectionalityFromThresholds(kpi, kpi.min ?? 0);
-};
-
+// Values are validated at the boundary (mappers.ts parseKpiRows), so the only
+// repair left here is keeping thresholds in tier order: a misordered tier
+// collapses to zero width instead of drawing an inverted range.
 const normalizeThresholds = (
   kpi: KPIViewModel,
   min: number,
   directionality: BulletChartDirectionality,
 ): { bronze: number; silver: number; gold: number; platinum: number } => {
-  const bronze0 = toFinite(kpi.bronze, min);
-  const silver0 = toFinite(kpi.silver, bronze0);
-  const gold0 = toFinite(kpi.gold, silver0);
-  const platinum0 = toFinite(kpi.platinum, gold0);
+  const {
+    bronze: bronze0,
+    silver: silver0,
+    gold: gold0,
+    platinum: platinum0,
+  } = kpi;
 
   if (directionality === "higher-is-better") {
     const bronze = Math.max(min, bronze0);
@@ -236,8 +197,8 @@ const formatOpenHighRange = (from: number): string => {
 };
 
 const computeDomain = (kpi: KPIViewModel) => {
-  const directionality = getDirectionality(kpi);
-  const baseMin = kpi.min ?? 0;
+  const { directionality } = kpi;
+  const baseMin = kpi.min;
 
   let { bronze, silver, gold, platinum } = normalizeThresholds(
     kpi,
@@ -245,9 +206,8 @@ const computeDomain = (kpi: KPIViewModel) => {
     directionality,
   );
 
-  const valueCandidate = toFinite(kpi.value, baseMin);
-  const planCandidate =
-    kpi.planValue == null ? baseMin : toFinite(kpi.planValue, baseMin);
+  const valueCandidate = kpi.value;
+  const planCandidate = kpi.planValue ?? baseMin;
 
   let domainMin = baseMin;
 
@@ -293,14 +253,12 @@ const computeDomain = (kpi: KPIViewModel) => {
 };
 
 export const getTierKeyByValue = (kpi: KPIViewModel): BulletChartSegmentKey => {
-  const directionality = getDirectionality(kpi);
-  const min = kpi.min ?? 0;
+  const { directionality, value } = kpi;
   const { bronze, silver, gold, platinum } = normalizeThresholds(
     kpi,
-    min,
+    kpi.min,
     directionality,
   );
-  const value = toFinite(kpi.value, min);
 
   if (directionality === "higher-is-better") {
     if (value >= platinum) return "platinum";

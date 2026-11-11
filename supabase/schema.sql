@@ -15,7 +15,11 @@ create table kpis (
   platinum      float8 not null,
   plateau_label text not null,
   explanation   text not null,
+  -- Only two values are valid; the app rejects anything else (mappers.ts).
+  -- Existing database: alter table kpis add constraint kpis_directionality_check
+  --   check (directionality in ('higher-is-better', 'lower-is-better'));
   directionality text not null
+    check (directionality in ('higher-is-better', 'lower-is-better'))
 );
 
 -- Seed data

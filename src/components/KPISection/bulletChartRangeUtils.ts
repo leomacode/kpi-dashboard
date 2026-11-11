@@ -14,10 +14,7 @@ export type BulletChartSegment = {
   colorKey: BulletChartSegmentKey;
   from: number;
   to: number;
-  isOpenEnded: boolean;
   modalRange: string;
-  pctFrom: number;
-  pctWidth: number;
 };
 
 export type BulletChartRanges = {
@@ -27,12 +24,10 @@ export type BulletChartRanges = {
   segments: BulletChartSegment[];
 };
 
-type Options = {
-  min?: number;
-  max?: number;
-  headroomRatio?: number;
-  minHeadroom?: number;
-};
+// Extra room beyond the open-ended tier so a value there doesn't sit on the
+// edge: 25% of the boundary value, at least 1 unit.
+const HEADROOM_RATIO = 0.25;
+const MIN_HEADROOM = 1;
 
 const clamp = (n: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, n));
@@ -210,19 +205,6 @@ export const getPositionInFixedTierSystem = (
   return Math.max(0, Math.min(100, position));
 };
 
-export const valueToPercent = (
-  value: number,
-  domainMin: number,
-  domainMax: number,
-  directionality: BulletChartDirectionality = "higher-is-better",
-): number => {
-  const range = domainMax - domainMin;
-  if (range <= 0) return 0;
-  const raw = ((value - domainMin) / range) * 100;
-  const pct = clamp(raw, 0, 100);
-  return directionality === "lower-is-better" ? 100 - pct : pct;
-};
-
 const formatRangeNumber = (n: number): string => {
   if (!Number.isFinite(n)) return "0";
   const isInt = Math.abs(n - Math.round(n)) < 1e-9;
@@ -254,9 +236,9 @@ const formatOpenHighRange = (from: number): string => {
   return `${formatRangeNumber(adjusted)}+`;
 };
 
-const computeDomain = (kpi: KPIViewModel, options: Options = {}) => {
+const computeDomain = (kpi: KPIViewModel) => {
   const directionality = getDirectionality(kpi);
-  const baseMin = options.min ?? kpi.min ?? 0;
+  const baseMin = kpi.min ?? 0;
 
   let { bronze, silver, gold, platinum } = normalizeThresholds(
     kpi,
@@ -273,13 +255,8 @@ const computeDomain = (kpi: KPIViewModel, options: Options = {}) => {
   if (directionality === "lower-is-better") {
     domainMin = Math.min(baseMin, valueCandidate, planCandidate, platinum);
     if (domainMin >= platinum) {
-      const headroomRatio = options.headroomRatio ?? 0.25;
-      const minHeadroom = options.minHeadroom ?? 1;
-      const headroom = Math.max(
-        Math.abs(platinum) * headroomRatio,
-        minHeadroom,
-      );
-      domainMin = platinum - headroom;
+      domainMin =
+        platinum - Math.max(Math.abs(platinum) * HEADROOM_RATIO, MIN_HEADROOM);
     }
     ({ bronze, silver, gold, platinum } = normalizeThresholds(
       kpi,
@@ -296,19 +273,16 @@ const computeDomain = (kpi: KPIViewModel, options: Options = {}) => {
     planCandidate,
     domainMin + 1,
   );
-  let domainMax = options.max ?? baseMax;
+  let domainMax = baseMax;
 
   if (domainMax <= openEndedStart) {
-    const headroomRatio = options.headroomRatio ?? 0.25;
-    const minHeadroom = options.minHeadroom ?? 1;
-    const headroom = Math.max(openEndedStart * headroomRatio, minHeadroom);
-    domainMax = openEndedStart + headroom;
+    domainMax =
+      openEndedStart + Math.max(openEndedStart * HEADROOM_RATIO, MIN_HEADROOM);
   }
 
   if (domainMax <= domainMin) domainMax = domainMin + 1;
 
   return {
-    baseMin,
     domainMin,
     domainMax,
     directionality,
@@ -358,10 +332,7 @@ export const getTierMetaByValue = (
   return { name: nameMap[key], colorKey: key };
 };
 
-export const buildBulletChartRanges = (
-  kpi: KPIViewModel,
-  options: Options = {},
-): BulletChartRanges => {
+export const buildBulletChartRanges = (kpi: KPIViewModel): BulletChartRanges => {
   const {
     domainMin,
     domainMax,
@@ -370,7 +341,7 @@ export const buildBulletChartRanges = (
     silver,
     gold,
     platinum,
-  } = computeDomain(kpi, options);
+  } = computeDomain(kpi);
 
   const raw =
     directionality === "higher-is-better"
@@ -382,7 +353,6 @@ export const buildBulletChartRanges = (
             colorKey: "minimum" as BulletChartSegmentKey,
             from: domainMin,
             to: bronze,
-            isOpenEnded: false,
             modalRange:
               domainMin >= bronze
                 ? `< ${formatRangeNumber(bronze)}`
@@ -395,7 +365,6 @@ export const buildBulletChartRanges = (
             colorKey: "bronze" as BulletChartSegmentKey,
             from: bronze,
             to: silver,
-            isOpenEnded: false,
             modalRange: `${formatRangeNumber(bronze)} - ${formatRangeNumber(justBelow(silver))}`,
           },
           {
@@ -405,7 +374,6 @@ export const buildBulletChartRanges = (
             colorKey: "silver" as BulletChartSegmentKey,
             from: silver,
             to: gold,
-            isOpenEnded: false,
             modalRange: `${formatRangeNumber(silver)} - ${formatRangeNumber(justBelow(gold))}`,
           },
           {
@@ -415,7 +383,6 @@ export const buildBulletChartRanges = (
             colorKey: "gold" as BulletChartSegmentKey,
             from: gold,
             to: platinum,
-            isOpenEnded: false,
             modalRange: `${formatRangeNumber(gold)} - ${formatRangeNumber(justBelow(platinum))}`,
           },
           {
@@ -425,7 +392,6 @@ export const buildBulletChartRanges = (
             colorKey: "platinum" as BulletChartSegmentKey,
             from: platinum,
             to: domainMax,
-            isOpenEnded: true,
             modalRange: `${formatRangeNumber(platinum)}+`,
           },
         ]
@@ -437,7 +403,6 @@ export const buildBulletChartRanges = (
             colorKey: "minimum" as BulletChartSegmentKey,
             from: bronze,
             to: domainMax,
-            isOpenEnded: true,
             modalRange: formatOpenHighRange(bronze),
           },
           {
@@ -447,7 +412,6 @@ export const buildBulletChartRanges = (
             colorKey: "bronze" as BulletChartSegmentKey,
             from: silver,
             to: bronze,
-            isOpenEnded: false,
             modalRange: formatClosedRange(silver, bronze),
           },
           {
@@ -457,7 +421,6 @@ export const buildBulletChartRanges = (
             colorKey: "silver" as BulletChartSegmentKey,
             from: gold,
             to: silver,
-            isOpenEnded: false,
             modalRange: formatClosedRange(gold, silver),
           },
           {
@@ -467,7 +430,6 @@ export const buildBulletChartRanges = (
             colorKey: "gold" as BulletChartSegmentKey,
             from: platinum,
             to: gold,
-            isOpenEnded: false,
             modalRange: formatClosedRange(platinum, gold),
           },
           {
@@ -477,37 +439,15 @@ export const buildBulletChartRanges = (
             colorKey: "platinum" as BulletChartSegmentKey,
             from: domainMin,
             to: platinum,
-            isOpenEnded: false,
             modalRange: `≤ ${formatRangeNumber(platinum)}`,
           },
         ];
 
-  const segments: BulletChartSegment[] = raw.map((s) => {
-    const safeFrom = clamp(s.from, domainMin, domainMax);
-    const safeTo = clamp(s.to, domainMin, domainMax);
-    const pFrom = valueToPercent(
-      safeFrom,
-      domainMin,
-      domainMax,
-      directionality,
-    );
-    const pTo = valueToPercent(safeTo, domainMin, domainMax, directionality);
-    const left = Math.min(pFrom, pTo);
-    const width = Math.max(0, Math.abs(pTo - pFrom));
-
-    return {
-      key: s.key,
-      label: s.label,
-      description: s.description,
-      colorKey: s.colorKey,
-      from: safeFrom,
-      to: safeTo,
-      isOpenEnded: s.isOpenEnded,
-      modalRange: s.modalRange,
-      pctFrom: clamp(left, 0, 100),
-      pctWidth: clamp(width, 0, 100),
-    };
-  });
+  const segments: BulletChartSegment[] = raw.map((s) => ({
+    ...s,
+    from: clamp(s.from, domainMin, domainMax),
+    to: clamp(s.to, domainMin, domainMax),
+  }));
 
   return { domainMin, domainMax, directionality, segments };
 };

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/leomacode/kpi-dashboard/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/leomacode/kpi-dashboard/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-✔-3178c6?style=flat-square)
-![Tests](https://img.shields.io/badge/Tests-141%20unit%20%2B%2075%20E2E-22c55e?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-137%20unit%20%2B%2075%20E2E-22c55e?style=flat-square)
 ![Playwright](https://img.shields.io/badge/Playwright-75%20E2E%20tests-2563eb?style=flat-square)
 
 A sustainability KPI dashboard for agricultural farms, built to demonstrate custom data visualisation, real backend integration, and production-grade frontend engineering.
@@ -18,7 +18,7 @@ A sustainability KPI dashboard for agricultural farms, built to demonstrate cust
 - **Custom bullet chart** — built without a chart library, using a fixed 5-tier system where each tier always occupies 20% of the bar width
 - **Non-linear positioning algorithm** — handles both higher-is-better and lower-is-better KPIs, needle always moves rightward on improvement
 - **Optimistic updates** — plan value changes update the UI immediately with server rollback on failure
-- **Comprehensive test coverage** — 141 unit tests + 75 Playwright E2E tests across Chromium, Firefox, and WebKit, plus a 15-question eval set for the AI assistant
+- **Comprehensive test coverage** — 137 unit tests + 75 Playwright E2E tests across Chromium, Firefox, and WebKit, plus a 15-question eval set for the AI assistant
 - **Accessible modal** — keyboard navigation, focus trap, `role="dialog"`, `aria-modal`
 - **"Ask your KPIs" AI assistant** — plain-language questions answered by a tool-calling agent over the dashboard's real data, streamed, with a validated chart and every tool call shown
 
@@ -371,7 +371,7 @@ Then run the schema and seed data in your Supabase SQL editor. It creates both `
 
 GitHub Actions runs on every push to `master` and every PR:
 
-- **Static gate** — lint, typecheck, unit tests (141), production build.
+- **Static gate** — lint, typecheck, unit tests (137), production build.
 - **E2E gate** — Playwright tests, sharded for speed.
   - **Pull request:** Chromium only, 2 parallel shards (~3 min).
   - **Push to master:** Chromium + Firefox + WebKit, each 2 shards (~5 min, 6 parallel runners).
@@ -385,7 +385,7 @@ Workflow: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
 ## Testing
 
 ```bash
-npm run test          # 141 unit + component tests
+npm run test          # 137 unit + component tests
 npx playwright test   # 75 E2E tests (25 specs × Chromium, Firefox, WebKit)
 npm run eval          # 15-question eval against the real model (needs an API key)
 ```

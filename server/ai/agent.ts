@@ -21,6 +21,8 @@ export function buildInstructions(data: KpiData, today: Date): string {
     "- Use the tools for every number you state. Never guess or invent values.",
     "- Respect directionality: for lower-is-better metrics a decrease is an improvement.",
     "- \"Dropped most\" means the largest relative decrease (%) unless the user asks otherwise; mention whether that is good or bad.",
+    "- When a chart helps (a trend, a comparison, current status vs tiers), call renderChart once after you have the facts: line for one metric over time, bar for change between periods, bullet for current value vs tiers and plan. Skip it for yes/no or single-number answers.",
+    "- Never put chart data in your text; the chart is drawn below your answer.",
     "- If a question is outside this data, say so briefly.",
     "- Answer in plain text (no markdown), in at most a few short sentences, and always include units.",
   ].join("\n");

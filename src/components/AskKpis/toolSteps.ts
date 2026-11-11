@@ -1,4 +1,5 @@
 import { getToolName, isToolUIPart, type UIMessage } from "ai";
+import type { ChartData, RenderChartResult } from "./chartSchema";
 
 export type ToolStep = {
   id: string;
@@ -17,12 +18,30 @@ const summaryOf = (output: unknown): string =>
     ? output.summary
     : "Done";
 
+// renderChart takes its chart config as a JSON string; show it as an object.
+function displayInput(input: unknown): unknown {
+  if (typeof input !== "object" || input === null || !("spec" in input)) return input;
+  if (typeof input.spec !== "string") return input;
+  try {
+    return { spec: JSON.parse(input.spec) };
+  } catch {
+    return input; // invalid JSON is exactly what the model sent — show it raw
+  }
+}
+
 export function toToolSteps(message: UIMessage): ToolStep[] {
   return message.parts.filter(isToolUIPart).map((part) => {
-    const base = { id: part.toolCallId, name: getToolName(part), input: part.input };
+    const base = { id: part.toolCallId, name: getToolName(part), input: displayInput(part.input) };
     switch (part.state) {
-      case "output-available":
-        return { ...base, status: "done", result: summaryOf(part.output) };
+      case "output-available": {
+        // A tool can run fine yet report failure, e.g. an invalid chart spec.
+        const failed =
+          typeof part.output === "object" &&
+          part.output !== null &&
+          "ok" in part.output &&
+          part.output.ok === false;
+        return { ...base, status: failed ? "error" : "done", result: summaryOf(part.output) };
+      }
       case "output-error":
         return { ...base, status: "error", result: part.errorText };
       case "output-denied":
@@ -31,4 +50,21 @@ export function toToolSteps(message: UIMessage): ToolStep[] {
         return { ...base, status: "running", result: "Running…" };
     }
   });
+}
+
+// Output of the server's renderChart tool. Light structural check only: the
+// payload comes from our own API, but a malformed one must not crash React.
+const isRenderChartResult = (o: unknown): o is RenderChartResult =>
+  typeof o === "object" && o !== null && "ok" in o && typeof o.ok === "boolean";
+
+export function chartsOf(message: UIMessage): { charts: ChartData[]; chartFailed: boolean } {
+  const results = message.parts
+    .filter(isToolUIPart)
+    .filter((p) => getToolName(p) === "renderChart" && p.state === "output-available")
+    .map((p) => p.output)
+    .filter(isRenderChartResult);
+
+  const charts = results.flatMap((r) => (r.ok ? [r.chart] : []));
+  const chartFailed = charts.length === 0 && results.some((r) => !r.ok && r.gaveUp);
+  return { charts, chartFailed };
 }

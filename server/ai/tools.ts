@@ -2,6 +2,18 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { KpiData } from "./data.js";
 import type { KPIViewModel } from "../../src/components/KPISection/types.js";
+import {
+  compareKpi,
+  findKpi,
+  monthsWithData,
+  periodLabel,
+  type Comparison,
+} from "./metrics.js";
+import { MAX_CHART_ATTEMPTS, createChartRenderer } from "./charts.js";
+import { ChartSpec } from "../../src/components/AskKpis/chartSchema.js";
+
+// Embedded in the tool description so the model knows the exact shape.
+const CHART_JSON_SCHEMA = JSON.stringify(z.toJSONSchema(ChartSpec));
 
 const Month = z
   .string()
@@ -15,16 +27,6 @@ const MetricRef = z
 // Every tool returns `summary`: one human-readable line shown in the
 // "show the work" panel. The rest of the object is for the model.
 type ToolError = { summary: string; error: string };
-
-export function findKpi(
-  kpis: KPIViewModel[],
-  ref: string,
-): KPIViewModel | undefined {
-  const needle = ref.trim().toLowerCase();
-  return kpis.find(
-    (k) => k.id.toLowerCase() === needle || k.name.toLowerCase() === needle,
-  );
-}
 
 const unknownMetric = (kpis: KPIViewModel[], ref: string): ToolError => ({
   summary: `Unknown metric "${ref}"`,
@@ -40,63 +42,9 @@ const Period = z
   })
   .describe("Month range, inclusive. Values in the range are averaged.");
 
-type Period = z.infer<typeof Period>;
-
-// Float noise (22.6 - 18.4 = 4.200000000000003) would leak into answers.
-const round = (n: number) => Math.round(n * 100) / 100;
-
-const label = (p: Period) => (p.to && p.to !== p.from ? `${p.from}…${p.to}` : p.from);
-
-export function averageInPeriod(
-  data: KpiData,
-  kpiId: string,
-  { from, to = from }: Period,
-): number | null {
-  const values = data.history
-    .filter((p) => p.kpiId === kpiId && p.month >= from && p.month <= to)
-    .map((p) => p.value);
-  return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
-}
-
-export type Comparison = {
-  id: string;
-  name: string;
-  unit: string;
-  directionality: KPIViewModel["directionality"];
-  a: number;
-  b: number;
-  change: number;
-  changePct: number | null;
-  verdict: "improved" | "worsened" | "unchanged";
-};
-
-export function compareKpi(
-  data: KpiData,
-  kpi: KPIViewModel,
-  periodA: Period,
-  periodB: Period,
-): Comparison | null {
-  const a = averageInPeriod(data, kpi.id, periodA);
-  const b = averageInPeriod(data, kpi.id, periodB);
-  if (a === null || b === null) return null;
-
-  const change = b - a;
-  const better = kpi.directionality === "higher-is-better" ? change > 0 : change < 0;
-  return {
-    id: kpi.id,
-    name: kpi.name,
-    unit: kpi.unit,
-    directionality: kpi.directionality,
-    a: round(a),
-    b: round(b),
-    change: round(change),
-    changePct: a === 0 ? null : round((change / Math.abs(a)) * 100),
-    verdict: change === 0 ? "unchanged" : better ? "improved" : "worsened",
-  };
-}
-
 export function createTools(data: KpiData) {
-  const months = [...new Set(data.history.map((p) => p.month))].sort();
+  const months = monthsWithData(data);
+  const renderChart = createChartRenderer(data);
 
   return {
     listMetrics: tool({
@@ -157,13 +105,36 @@ export function createTools(data: KpiData) {
         const missing = kpis.length - comparisons.length;
         return {
           summary:
-            `${comparisons.length} metric${comparisons.length === 1 ? "" : "s"}: ${label(periodA)} vs ${label(periodB)}` +
+            `${comparisons.length} metric${comparisons.length === 1 ? "" : "s"}: ${periodLabel(periodA)} vs ${periodLabel(periodB)}` +
             (missing ? ` (${missing} without data)` : ""),
-          periodA: label(periodA),
-          periodB: label(periodB),
+          periodA: periodLabel(periodA),
+          periodB: periodLabel(periodB),
           comparisons,
         };
       },
+    }),
+
+    renderChart: tool({
+      description:
+        "Draw one chart under the answer. Pass `spec` as a JSON string matching this JSON Schema: " +
+        CHART_JSON_SCHEMA +
+        ` Use exact metric ids. The server fills in the numbers. If the result has ok=false, fix every listed error and call again (max ${MAX_CHART_ATTEMPTS} attempts). If gaveUp=true, stop and answer without a chart.`,
+      inputSchema: z.object({
+        spec: z.string().max(4_000).describe("Chart config as a JSON string"),
+      }),
+      execute: async ({ spec }) => renderChart(spec),
+      // The browser needs the chart data; the model only needs the outcome.
+      toModelOutput: ({ output }) => ({
+        type: "json",
+        value: output.ok
+          ? { ok: true, summary: output.summary }
+          : {
+              ok: false,
+              errors: output.errors,
+              attemptsLeft: output.attemptsLeft,
+              gaveUp: output.gaveUp,
+            },
+      }),
     }),
 
     queryMetric: tool({

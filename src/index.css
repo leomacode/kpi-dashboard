@@ -25,6 +25,14 @@
   --color-accent: #0d9488;
   --color-accent-dark: #0f766e;
 
+  /* Chart colors (Ask your KPIs). Improved/worsened is a colour-blind-safe
+     blue/red pair (validated: protan ΔE 21.6); always shown with a text label. */
+  --chart-line: var(--color-accent);
+  --chart-improved: #2a78d6;
+  --chart-worsened: #e34948;
+  --chart-unchanged: #94a3b8;
+  --chart-grid: #e2e8f0;
+
   /* Tier colors */
   --tier-minimum: #e2e8f0;
   --tier-bronze: #fdba74;

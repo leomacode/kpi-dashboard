@@ -1,10 +1,11 @@
 import { useId, useRef, useState, type FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import styled from "styled-components";
 import { MAX_QUESTION_CHARS, describeError, toWireMessages } from "./wire";
 import ShowTheWork from "./ShowTheWork";
-import { toToolSteps } from "./toolSteps";
+import { chartsOf, toToolSteps } from "./toolSteps";
+import AnswerChart from "./charts/AnswerChart";
 
 const SUGGESTIONS = [
   "Which metric dropped most last month?",
@@ -97,6 +98,13 @@ const StyledStatus = styled.p`
   color: var(--color-text-secondary);
 `;
 
+const StyledChartError = styled.p`
+  margin: 0.75rem 0 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  white-space: normal;
+`;
+
 const StyledError = styled.div`
   display: flex;
   align-items: center;
@@ -186,6 +194,26 @@ const StyledSuggestions = styled.ul`
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+// Chart(s), chart failure note and "show the work" under an assistant answer.
+const AssistantExtras = ({ message }: { message: UIMessage }) => {
+  const { charts, chartFailed } = chartsOf(message);
+  return (
+    <>
+      {charts.map((chart, i) => (
+        <AnswerChart key={i} chart={chart} />
+      ))}
+      {chartFailed && (
+        <StyledChartError data-testid="chart-error">
+          ⚠ A chart could not be drawn for this answer: the generated chart
+          configuration was invalid after 3 attempts. The answer above is
+          unaffected.
+        </StyledChartError>
+      )}
+      <ShowTheWork steps={toToolSteps(message)} />
+    </>
+  );
+};
+
 const AskKpisPanel = () => {
   const {
     messages,
@@ -250,7 +278,7 @@ const AskKpisPanel = () => {
             {m.parts.map((part, i) =>
               part.type === "text" ? <span key={i}>{part.text}</span> : null,
             )}
-            {m.role === "assistant" && <ShowTheWork steps={toToolSteps(m)} />}
+            {m.role === "assistant" && <AssistantExtras message={m} />}
           </StyledMessage>
         ))}
       </StyledLog>

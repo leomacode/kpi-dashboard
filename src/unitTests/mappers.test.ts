@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { mapToViewModel } from "../components/KPISection/mappers";
+import {
+  mapToViewModel,
+  parseHistoryRows,
+  parseKpiRows,
+} from "../components/KPISection/mappers";
 import type { SupabaseKpi } from "../components/KPISection/types";
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -66,5 +70,45 @@ describe("mapToViewModel", () => {
   it("does not add extra fields", () => {
     const result = mapToViewModel(baseRow);
     expect(Object.keys(result)).toHaveLength(13);
+  });
+});
+
+// ─── parseKpiRows / parseHistoryRows (validation at the boundary) ─────────────
+
+describe("parseKpiRows", () => {
+  it("maps valid rows, including a null plan value", () => {
+    const rows = [baseRow, { ...baseRow, id: "kpi-2", plan_value: null }];
+    expect(parseKpiRows(rows)?.map((k) => k.planValue)).toEqual([1500, null]);
+  });
+
+  it.each([
+    ["a number sent as a string", { value: "2000" }],
+    ["a non-finite number", { bronze: Number.NaN }],
+    ["an unknown directionality", { directionality: "lower" }],
+    ["a missing field", { name: undefined }],
+  ])("rejects the whole table when one row has %s", (_, patch) => {
+    expect(parseKpiRows([baseRow, { ...baseRow, ...patch }])).toBeNull();
+  });
+
+  it("returns null for empty or non-array input", () => {
+    expect(parseKpiRows([])).toBeNull();
+    expect(parseKpiRows(null)).toBeNull();
+    expect(parseKpiRows({ rows: [baseRow] })).toBeNull();
+  });
+});
+
+describe("parseHistoryRows", () => {
+  const row = { kpi_id: "kpi-1", month: "2026-10", value: 2000 };
+
+  it("maps valid rows", () => {
+    expect(parseHistoryRows([row])).toEqual([
+      { kpiId: "kpi-1", month: "2026-10", value: 2000 },
+    ]);
+  });
+
+  it("rejects malformed months and values", () => {
+    expect(parseHistoryRows([{ ...row, month: "2026-13" }])).toBeNull();
+    expect(parseHistoryRows([{ ...row, month: "Oct 2026" }])).toBeNull();
+    expect(parseHistoryRows([{ ...row, value: "2000" }])).toBeNull();
   });
 });

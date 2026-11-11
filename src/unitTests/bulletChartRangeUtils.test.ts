@@ -107,30 +107,6 @@ describe("buildBulletChartRanges", () => {
     expect(lower.directionality).toBe("lower-is-better");
   });
 
-  it("all segment widths sum to 100%", () => {
-    const { segments } = buildBulletChartRanges(higherIsBetter);
-    const total = segments.reduce((sum, s) => sum + s.pctWidth, 0);
-    expect(Math.round(total)).toBe(100);
-  });
-
-  it("all segment widths sum to 100% for lower-is-better", () => {
-    const { segments } = buildBulletChartRanges(lowerIsBetter);
-    const total = segments.reduce((sum, s) => sum + s.pctWidth, 0);
-    expect(Math.round(total)).toBe(100);
-  });
-
-  it("platinum segment is open-ended for higher-is-better", () => {
-    const { segments } = buildBulletChartRanges(higherIsBetter);
-    const platinum = segments.find((s) => s.key === "platinum");
-    expect(platinum?.isOpenEnded).toBe(true);
-  });
-
-  it("minimum segment is open-ended for lower-is-better", () => {
-    const { segments } = buildBulletChartRanges(lowerIsBetter);
-    const minimum = segments.find((s) => s.key === "minimum");
-    expect(minimum?.isOpenEnded).toBe(true);
-  });
-
   it("domainMin is less than domainMax", () => {
     const higher = buildBulletChartRanges(higherIsBetter);
     const lower = buildBulletChartRanges(lowerIsBetter);

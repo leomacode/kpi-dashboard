@@ -5,7 +5,6 @@ import {
   useState,
   useRef,
   useId,
-  useEffectEvent,
 } from "react";
 import styled, { css } from "styled-components";
 import type { KPIViewModel } from "./types";
@@ -51,15 +50,30 @@ const tierStyles = css`
   }
 `;
 
-const StyledOverlay = styled.div`
+// Native modal <dialog>: the browser provides the top layer, Esc handling
+// (as a cancel event), inert background and focus containment. The dialog
+// itself covers the viewport so a click on its padding is a backdrop click.
+const StyledDialog = styled.dialog`
   position: fixed;
   inset: 0;
-  background: var(--overlay-bg);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
   padding: 1rem;
+  background: transparent;
+
+  &[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &::backdrop {
+    background: var(--overlay-bg);
+  }
 `;
 
 const StyledModal = styled.div`
@@ -319,7 +333,8 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
   const currentTier = useMemo(() => getTierMetaByValue(kpi), [kpi]);
   const { segments } = useMemo(() => buildBulletChartRanges(kpi), [kpi]);
 
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -348,73 +363,39 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter") handleSave();
-      if (e.key === "Escape") handleCancel();
+      if (e.key === "Escape") {
+        // Handled here: stop the dialog from also receiving a cancel request
+        // for this keypress, which would close it right after the edit ends.
+        e.preventDefault();
+        handleCancel();
+      }
     },
     [handleSave, handleCancel],
   );
 
-  // Effect Event: always reads the latest `isEditing` / `onClose` without
-  // being a reactive dependency, so the keydown listener is attached once on
-  // mount instead of being torn down and re-added on every parent render.
-  const onEscape = useEffectEvent(() => {
+  // Esc fires `cancel` on a modal dialog. Prevent the browser from closing
+  // it so React state stays the source of truth: Esc cancels an edit first,
+  // and only closes the dialog when nothing is being edited.
+  const handleCancelEvent = (e: React.SyntheticEvent) => {
+    e.preventDefault();
     if (isEditing) handleCancel();
     else onClose();
-  });
+  };
 
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onEscape();
-    };
-    document.addEventListener("keydown", handleEsc);
-    return () => document.removeEventListener("keydown", handleEsc);
-  }, []);
-
-  // Focus trap, initial focus, and body-scroll lock — invariant: while the
-  // dialog is mounted, Tab/Shift+Tab cannot escape it and the page beneath
-  // does not scroll. Effect runs once on mount and tears down on unmount.
+  // Open as a modal on mount, close on unmount. Focus moves into the dialog
+  // on showModal() and is returned explicitly on unmount, because the
+  // element is removed rather than closed by the user.
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const prevBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const getFocusable = (): HTMLElement[] =>
-      Array.from(
-        dialog.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-
-    (getFocusable()[0] ?? dialog).focus();
-
-    const handleTab = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
-      const focusables = getFocusable();
-      if (focusables.length === 0) {
-        e.preventDefault();
-        return;
-      }
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-
-      if (e.shiftKey) {
-        if (active === first || !dialog.contains(active)) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else if (active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-
-    dialog.addEventListener("keydown", handleTab);
+    dialog.showModal();
+    // showModal() focuses the first focusable element, which in Chrome is
+    // the scrollable modal body (scrollers are focusable). Start on the
+    // close button instead, as before.
+    closeButtonRef.current?.focus();
     return () => {
-      dialog.removeEventListener("keydown", handleTab);
-      document.body.style.overflow = prevBodyOverflow;
+      dialog.close();
       previouslyFocused?.focus?.();
     };
   }, []);
@@ -431,18 +412,27 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
   );
 
   return (
-    <StyledOverlay
+    <StyledDialog
       ref={dialogRef}
-      role="dialog"
-      aria-modal="true"
       aria-labelledby={titleId}
-      tabIndex={-1}
+      onCancel={handleCancelEvent}
+      // A browser may still force-close (e.g. repeated Esc); keep React in
+      // sync. `close` is dispatched asynchronously, so ignore a stale one
+      // that arrives after the dialog was shown again (StrictMode remount).
+      onClose={() => {
+        if (!dialogRef.current?.open) onClose();
+      }}
       onClick={handleOverlayClick}
     >
       <StyledModal>
         <StyledModalHeader>
           <StyledModalTitle id={titleId}>{kpi.name}</StyledModalTitle>
-          <StyledCloseBtn type="button" onClick={onClose} aria-label="Close">
+          <StyledCloseBtn
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+          >
             ×
           </StyledCloseBtn>
         </StyledModalHeader>
@@ -546,7 +536,7 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
           </StyledFooterBtn>
         </StyledFooter>
       </StyledModal>
-    </StyledOverlay>
+    </StyledDialog>
   );
 };
 

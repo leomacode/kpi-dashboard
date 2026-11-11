@@ -3,10 +3,10 @@ import styled from "styled-components";
 import BulletChartRow from "./BulletChartRow";
 import BulletChartDetailModal from "./BulletChartDetailModal";
 import { supabase } from "../../lib/supabase";
-import { mapToViewModel } from "./mappers";
+import { parseKpiRows } from "./mappers";
 import { mockKpis } from "./data/mockKpis";
 
-import type { KPIViewModel, SupabaseKpi } from "./types";
+import type { KPIViewModel } from "./types";
 
 type Props = {
   title?: string;
@@ -130,11 +130,15 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
 
       if (cancelled) return;
 
-      // Fall back to mock data if Supabase query fails or returns nothing
-      const next =
-        error || !data || data.length === 0
-          ? mockKpis
-          : (data as SupabaseKpi[]).map(mapToViewModel);
+      // Fall back to mock data if the query fails, returns nothing, or
+      // returns rows that don't match the schema.
+      const parsed = error ? null : parseKpiRows(data);
+      if (!error && data?.length && !parsed) {
+        console.warn(
+          "Supabase kpis rows don't match the schema; using sample data.",
+        );
+      }
+      const next = parsed ?? mockKpis;
 
       kpiCache = next;
       setKpis(next);
@@ -187,8 +191,8 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
         console.error("Failed to update plan value:", error.message);
         // Rollback — refetch from server to restore correct state
         const { data } = await supabase.from("kpis").select("*").order("id");
-        if (data) {
-          const next = (data as SupabaseKpi[]).map(mapToViewModel);
+        const next = parseKpiRows(data);
+        if (next) {
           kpiCache = next;
           setKpis(next);
         }

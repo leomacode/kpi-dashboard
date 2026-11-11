@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import styled from "styled-components";
 import Header from "./components/Header/Header";
@@ -6,6 +7,9 @@ import NavigationTabs from "./components/Tabs/Tabs";
 import KPISection from "./components/KPISection/KPISection";
 import FarmInfo from "./components/FarmInfo/FarmInfo";
 import ErrorBoundary from "./components/ErrorBoundary";
+
+// Lazy so the AI SDK client stays out of the initial bundle.
+const AskKpisPanel = lazy(() => import("./components/AskKpis/AskKpisPanel"));
 
 const TABS = [
   { key: "kpis", label: "KPIs", href: "/kpis" },
@@ -23,7 +27,17 @@ export default function App() {
           <ErrorBoundary>
             <Routes>
               <Route path="/" element={<Navigate to="/kpis" replace />} />
-              <Route path="/kpis" element={<KPISection title="Main KPIs" />} />
+              <Route
+                path="/kpis"
+                element={
+                  <>
+                    <KPISection title="Main KPIs" />
+                    <Suspense fallback={null}>
+                      <AskKpisPanel />
+                    </Suspense>
+                  </>
+                }
+              />
               <Route path="/farm" element={<FarmInfo />} />
               <Route path="*" element={<Navigate to="/kpis" replace />} />
             </Routes>

@@ -1,0 +1,150 @@
+import {
+  APICallError,
+  LoadAPIKeyError,
+  RetryError,
+  StreamProviderError,
+  createUIMessageStreamResponse,
+  toUIMessageStream,
+  type LanguageModel,
+  type ModelMessage,
+} from "ai";
+import { z } from "zod";
+import { ASK_LIMITS } from "../../src/components/AskKpis/limits.js";
+import { runAgent } from "./agent.js";
+import type { KpiData } from "./data.js";
+
+// The client sends plain text history, not raw UI messages: the server never
+// trusts client-supplied tool calls/results, and the payload stays small.
+export const AskRequest = z.object({
+  messages: z
+    .array(
+      z.discriminatedUnion("role", [
+        z.object({
+          role: z.literal("user"),
+          text: z.string().trim().min(1).max(ASK_LIMITS.questionChars),
+        }),
+        z.object({
+          role: z.literal("assistant"),
+          text: z.string().max(ASK_LIMITS.answerChars),
+        }),
+      ]),
+    )
+    .min(1)
+    .max(ASK_LIMITS.messages)
+    // `?.`: Zod 4 still runs this refinement when .min(1) failed on [].
+    .refine(
+      (m) => m[m.length - 1]?.role === "user",
+      "Last message must be from the user",
+    ),
+});
+
+export type AskRequest = z.infer<typeof AskRequest>;
+
+const text = (status: number, body: string, headers: HeadersInit = {}) =>
+  new Response(body, {
+    status,
+    headers: { "content-type": "text/plain; charset=utf-8", ...headers },
+  });
+
+// Never forward raw provider errors to the browser: they can contain request
+// ids, model names or account details. Log server-side, show a friendly line.
+export function toClientError(error: unknown): string {
+  // The SDK retries transient failures and wraps the last one.
+  const cause = RetryError.isInstance(error) ? error.lastError : error;
+  // Overload can surface before streaming (APICallError) or mid-stream
+  // (StreamProviderError); both carry the HTTP status.
+  const status =
+    APICallError.isInstance(cause) || StreamProviderError.isInstance(cause)
+      ? cause.statusCode
+      : undefined;
+  // 429 = the API key's quota is used up (the free tier allows only a few
+  // requests per minute); 503 = the provider is overloaded.
+  if (status === 429) {
+    return "You have reached the usage limit for now. Please try again later.";
+  }
+  if (status === 503) {
+    return "The AI service is busy right now. Please try again in a minute.";
+  }
+  if (cause instanceof DOMException && cause.name === "TimeoutError") {
+    return "The AI service took too long to answer. Please try again.";
+  }
+  if (LoadAPIKeyError.isInstance(error)) {
+    return "The AI service is not configured on this deployment.";
+  }
+  return "Something went wrong while answering. Please try again.";
+}
+
+const clientIp = (req: Request) =>
+  req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+  req.headers.get("x-real-ip") ||
+  "unknown";
+
+export function createAskHandler(deps: {
+  getModel: () => LanguageModel;
+  loadData: () => Promise<KpiData>;
+  rateLimit: (
+    key: string,
+  ) => { ok: true } | { ok: false; retryAfterSec: number };
+  log?: (error: unknown) => void;
+}) {
+  const log = deps.log ?? ((e: unknown) => console.error("[api/ask]", e));
+
+  return async function handleAsk(req: Request): Promise<Response> {
+    if (req.method !== "POST")
+      return text(405, "Method not allowed", { allow: "POST" });
+
+    const limited = deps.rateLimit(clientIp(req));
+    if (!limited.ok) {
+      return text(
+        429,
+        `Too many questions. Please wait ${limited.retryAfterSec} s and try again.`,
+        { "retry-after": String(limited.retryAfterSec) },
+      );
+    }
+
+    const raw = await req.text();
+    if (new TextEncoder().encode(raw).length > ASK_LIMITS.bodyBytes) {
+      return text(413, "Request is too large.");
+    }
+
+    let json: unknown;
+    try {
+      json = JSON.parse(raw);
+    } catch {
+      return text(400, "Request body must be JSON.");
+    }
+    const parsed = AskRequest.safeParse(json);
+    if (!parsed.success) {
+      const tooLong = parsed.error.issues.some((i) => i.code === "too_big");
+      return text(
+        400,
+        tooLong
+          ? `Questions are limited to ${ASK_LIMITS.questionChars} characters.`
+          : "Invalid request.",
+      );
+    }
+
+    try {
+      const messages: ModelMessage[] = parsed.data.messages.map((m) => ({
+        role: m.role,
+        content: m.text,
+      }));
+      const { result, tools } = runAgent({
+        model: deps.getModel(),
+        messages,
+        data: await deps.loadData(),
+        onError: log,
+      });
+      return createUIMessageStreamResponse({
+        stream: toUIMessageStream({
+          stream: result.stream,
+          tools,
+          onError: toClientError,
+        }),
+      });
+    } catch (error) {
+      log(error);
+      return text(500, toClientError(error));
+    }
+  };
+}

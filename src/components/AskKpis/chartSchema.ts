@@ -8,10 +8,10 @@ import type { KPIViewModel } from "../KPISection/types";
 
 const Title = z.string().trim().min(1).max(80);
 const MetricId = z.string().describe('Exact metric id, e.g. "kpi-6"');
-const Month = z
+export const Month = z
   .string()
   .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Use YYYY-MM, e.g. 2026-10");
-const Period = z
+export const Period = z
   .strictObject({ from: Month, to: Month.optional() })
   .describe("Month range, inclusive; `to` defaults to `from`");
 

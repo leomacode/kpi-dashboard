@@ -12,7 +12,8 @@ import { mockKpis } from "../../src/components/KPISection/data/mockKpis.js";
 import { mockHistory } from "../../src/components/KPISection/data/mockHistory.js";
 import { MAX_STEPS, runAgent } from "./agent.js";
 import type { KpiData } from "./data.js";
-import { LIMITS, createAskHandler, toClientError } from "./handler.js";
+import { ASK_LIMITS as LIMITS } from "../../src/components/AskKpis/limits.js";
+import { createAskHandler, toClientError } from "./handler.js";
 import { getModel, withFallback } from "./model.js";
 import { createRateLimiter } from "./rateLimit.js";
 

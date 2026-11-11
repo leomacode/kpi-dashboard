@@ -2,7 +2,8 @@ import { memo, useId, useRef, useState, type FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import styled from "styled-components";
-import { MAX_QUESTION_CHARS, describeError, toWireMessages } from "./wire";
+import { describeError, toWireMessages } from "./wire";
+import { ASK_LIMITS } from "./limits";
 import ShowTheWork from "./ShowTheWork";
 import { chartsOf, toToolSteps } from "./toolSteps";
 import AnswerChart from "./charts/AnswerChart";
@@ -324,7 +325,7 @@ const AskKpisPanel = () => {
             ref={inputRef}
             type="text"
             value={input}
-            maxLength={MAX_QUESTION_CHARS}
+            maxLength={ASK_LIMITS.questionChars}
             autoComplete="off"
             placeholder="e.g. Which metric dropped most last month?"
             aria-describedby={hintId}
@@ -341,7 +342,7 @@ const AskKpisPanel = () => {
           )}
         </StyledRow>
         <StyledHint id={hintId}>
-          {input.length}/{MAX_QUESTION_CHARS} characters
+          {input.length}/{ASK_LIMITS.questionChars} characters
         </StyledHint>
       </StyledForm>
     </StyledCard>

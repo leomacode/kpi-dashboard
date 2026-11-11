@@ -9,15 +9,9 @@ import {
   type ModelMessage,
 } from "ai";
 import { z } from "zod";
+import { ASK_LIMITS } from "../../src/components/AskKpis/limits.js";
 import { runAgent } from "./agent.js";
 import type { KpiData } from "./data.js";
-
-export const LIMITS = {
-  questionChars: 500,
-  answerChars: 4_000,
-  messages: 10,
-  bodyBytes: 64_000,
-} as const;
 
 // The client sends plain text history, not raw UI messages: the server never
 // trusts client-supplied tool calls/results, and the payload stays small.
@@ -27,16 +21,16 @@ export const AskRequest = z.object({
       z.discriminatedUnion("role", [
         z.object({
           role: z.literal("user"),
-          text: z.string().trim().min(1).max(LIMITS.questionChars),
+          text: z.string().trim().min(1).max(ASK_LIMITS.questionChars),
         }),
         z.object({
           role: z.literal("assistant"),
-          text: z.string().max(LIMITS.answerChars),
+          text: z.string().max(ASK_LIMITS.answerChars),
         }),
       ]),
     )
     .min(1)
-    .max(LIMITS.messages)
+    .max(ASK_LIMITS.messages)
     // `?.`: Zod 4 still runs this refinement when .min(1) failed on [].
     .refine((m) => m[m.length - 1]?.role === "user", "Last message must be from the user"),
 });
@@ -103,7 +97,7 @@ export function createAskHandler(deps: {
     }
 
     const raw = await req.text();
-    if (new TextEncoder().encode(raw).length > LIMITS.bodyBytes) {
+    if (new TextEncoder().encode(raw).length > ASK_LIMITS.bodyBytes) {
       return text(413, "Request is too large.");
     }
 
@@ -119,7 +113,7 @@ export function createAskHandler(deps: {
       return text(
         400,
         tooLong
-          ? `Questions are limited to ${LIMITS.questionChars} characters.`
+          ? `Questions are limited to ${ASK_LIMITS.questionChars} characters.`
           : "Invalid request.",
       );
     }

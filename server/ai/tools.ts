@@ -10,14 +10,14 @@ import {
   type Comparison,
 } from "./metrics.js";
 import { MAX_CHART_ATTEMPTS, createChartRenderer } from "./charts.js";
-import { ChartSpec } from "../../src/components/AskKpis/chartSchema.js";
+import {
+  ChartSpec,
+  Month,
+  Period as ChartPeriod,
+} from "../../src/components/AskKpis/chartSchema.js";
 
 // Embedded in the tool description so the model knows the exact shape.
 const CHART_JSON_SCHEMA = JSON.stringify(z.toJSONSchema(ChartSpec));
-
-const Month = z
-  .string()
-  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Use YYYY-MM, e.g. 2026-10");
 
 const MetricRef = z
   .string()
@@ -35,12 +35,11 @@ const unknownMetric = (kpis: KPIViewModel[], ref: string): ToolError => ({
     .join(", ")}`,
 });
 
-const Period = z
-  .object({
-    from: Month,
-    to: Month.optional().describe("Defaults to `from` (a single month)"),
-  })
-  .describe("Month range, inclusive. Values in the range are averaged.");
+// Same Month/Period as the chart schema; the description adds what the
+// tool does with a range.
+const Period = ChartPeriod.describe(
+  "Month range, inclusive; `to` defaults to `from`. Values in the range are averaged.",
+);
 
 export function createTools(data: KpiData) {
   const months = monthsWithData(data);

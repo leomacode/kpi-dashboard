@@ -1,9 +1,5 @@
 import type { UIMessage } from "ai";
-
-// Must match LIMITS in server/ai/handler.ts.
-export const MAX_QUESTION_CHARS = 500;
-const MAX_ANSWER_CHARS = 4_000;
-const MAX_MESSAGES = 10;
+import { ASK_LIMITS } from "./limits";
 
 export type WireMessage = { role: "user" | "assistant"; text: string };
 
@@ -20,10 +16,10 @@ export function toWireMessages(messages: UIMessage[]): WireMessage[] {
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
       role: m.role as WireMessage["role"],
-      text: textOf(m).slice(0, m.role === "user" ? MAX_QUESTION_CHARS : MAX_ANSWER_CHARS),
+      text: textOf(m).slice(0, m.role === "user" ? ASK_LIMITS.questionChars : ASK_LIMITS.answerChars),
     }))
     .filter((m) => m.text.length > 0)
-    .slice(-MAX_MESSAGES);
+    .slice(-ASK_LIMITS.messages);
 }
 
 // The server replies to rejected requests with a short plain-text message

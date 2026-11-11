@@ -97,6 +97,70 @@ test.describe("KPI Modal", () => {
   });
 });
 
+// ─── Modal accessibility (native <dialog>) ───────────────────────────────────
+
+test.describe("KPI Modal accessibility", () => {
+  test("moves focus into the dialog and returns it to the row on close", async ({
+    page,
+  }) => {
+    const row = page.getByTestId("kpi-row").nth(2);
+    await row.focus();
+    await page.keyboard.press("Enter");
+
+    const dialog = page.getByRole("dialog", { name: "Nitrogen Farm Surplus" });
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "Close" }).first(),
+    ).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(row).toBeFocused();
+  });
+
+  test("keeps keyboard focus inside the dialog and locks page scroll", async ({
+    page,
+  }) => {
+    await page.getByTestId("kpi-row").first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+
+    // Tab well past the number of controls in the dialog: focus must never
+    // land on the page behind it (it is inert while the dialog is modal).
+    for (let i = 0; i < 12; i++) {
+      await page.keyboard.press("Tab");
+      const inDialogOrChrome = await page.evaluate(() => {
+        const active = document.activeElement;
+        return (
+          !active || active === document.body || !!active.closest("dialog")
+        );
+      });
+      expect(inDialogOrChrome).toBe(true);
+    }
+
+    const overflow = await page.evaluate(
+      () => getComputedStyle(document.documentElement).overflow,
+    );
+    expect(overflow).toBe("hidden");
+  });
+
+  test("Escape cancels an edit first, then closes the dialog", async ({
+    page,
+  }) => {
+    await page.getByTestId("kpi-row").first().click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Edit plan value").click();
+    await expect(dialog.getByPlaceholder("Enter value")).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog.getByPlaceholder("Enter value")).toBeHidden();
+    await expect(dialog).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+});
+
 // ─── Plan Value Editing ───────────────────────────────────────────────────────
 
 test.describe("Plan Value Editing", () => {

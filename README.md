@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/leomacode/kpi-dashboard/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/leomacode/kpi-dashboard/actions/workflows/ci.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-✔-3178c6?style=flat-square)
-![Tests](https://img.shields.io/badge/Tests-137%20unit%20%2B%2075%20E2E-22c55e?style=flat-square)
-![Playwright](https://img.shields.io/badge/Playwright-75%20E2E%20tests-2563eb?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-145%20unit%20%2B%2084%20E2E-22c55e?style=flat-square)
+![Playwright](https://img.shields.io/badge/Playwright-84%20E2E%20tests-2563eb?style=flat-square)
 
 A sustainability KPI dashboard for agricultural farms, built to demonstrate custom data visualisation, real backend integration, and production-grade frontend engineering.
 
@@ -18,8 +18,8 @@ A sustainability KPI dashboard for agricultural farms, built to demonstrate cust
 - **Custom bullet chart** — built without a chart library, using a fixed 5-tier system where each tier always occupies 20% of the bar width
 - **Non-linear positioning algorithm** — handles both higher-is-better and lower-is-better KPIs, needle always moves rightward on improvement
 - **Optimistic updates** — plan value changes update the UI immediately with server rollback on failure
-- **Comprehensive test coverage** — 137 unit tests + 75 Playwright E2E tests across Chromium, Firefox, and WebKit, plus a 15-question eval set for the AI assistant
-- **Accessible modal** — keyboard navigation, focus trap, `role="dialog"`, `aria-modal`
+- **Comprehensive test coverage** — 145 unit tests + 84 Playwright E2E tests across Chromium, Firefox, and WebKit, plus a 15-question eval set for the AI assistant
+- **Accessible modal** — native `<dialog>` opened with `showModal()`: the page behind is inert, focus moves in and back out, `Escape` cancels an edit before closing
 - **"Ask your KPIs" AI assistant** — plain-language questions answered by a tool-calling agent over the dashboard's real data, streamed, with a validated chart and every tool call shown
 
 ---
@@ -314,8 +314,8 @@ styled-components reflects real production experience from Be Informed, keeps st
 ## Accessibility
 
 - Interactive elements are native `<button>` elements with descriptive `aria-label` attributes
-- Detail modal uses `role="dialog"` and `aria-modal="true"`
-- Modal traps focus — `Escape` closes, `Enter` confirms, no mouse required
+- Detail modal is a native `<dialog>` opened with `showModal()`, so the page behind it is inert for keyboard and screen-reader users, not just visually covered
+- Focus starts on the close button and returns to the KPI row on close; `Escape` cancels an edit first, then closes; `Enter` confirms; page scroll is locked while open. Covered by Playwright tests in all three browsers
 - Tier information conveyed with both colour and text label — colour is never the sole indicator
 - Directionality labels rendered with visible text icons alongside colour
 
@@ -371,7 +371,7 @@ Then run the schema and seed data in your Supabase SQL editor. It creates both `
 
 GitHub Actions runs on every push to `master` and every PR:
 
-- **Static gate** — lint, typecheck, unit tests (137), production build.
+- **Static gate** — lint, typecheck, unit tests (145), production build.
 - **E2E gate** — Playwright tests, sharded for speed.
   - **Pull request:** Chromium only, 2 parallel shards (~3 min).
   - **Push to master:** Chromium + Firefox + WebKit, each 2 shards (~5 min, 6 parallel runners).
@@ -385,8 +385,8 @@ Workflow: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
 ## Testing
 
 ```bash
-npm run test          # 137 unit + component tests
-npx playwright test   # 75 E2E tests (25 specs × Chromium, Firefox, WebKit)
+npm run test          # 145 unit + component tests
+npx playwright test   # 84 E2E tests (28 specs × Chromium, Firefox, WebKit)
 npm run eval          # 15-question eval against the real model (needs an API key)
 ```
 

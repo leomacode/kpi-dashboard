@@ -125,3 +125,8 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
+/* Lock page scroll while a modal dialog is open (the dialog itself scrolls). */
+html:has(dialog[open]) {
+  overflow: hidden;
+}

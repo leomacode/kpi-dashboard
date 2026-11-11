@@ -37,16 +37,26 @@ export async function loadKpiData(
     client.from("kpi_history").select("*").order("month"),
   ]);
 
-  if (kpis.error || history.error || !kpis.data?.length || !history.data?.length) {
-    return MOCK_DATA;
+  // Each table falls back on its own: a project that hasn't created
+  // kpi_history yet still answers with its real KPIs and plan targets.
+  const kpisOk = !kpis.error && kpis.data?.length;
+  const historyOk = !history.error && history.data?.length;
+  if (!kpisOk || !historyOk) {
+    console.warn(
+      `[api/ask] Supabase ${[!kpisOk && "kpis", !historyOk && "kpi_history"]
+        .filter(Boolean)
+        .join(" and ")} unavailable; using mock data for it (see supabase/schema.sql)`,
+    );
   }
 
   return {
-    kpis: (kpis.data as SupabaseKpi[]).map(mapToViewModel),
-    history: (history.data as SupabaseKpiHistory[]).map((row) => ({
-      kpiId: row.kpi_id,
-      month: row.month,
-      value: row.value,
-    })),
+    kpis: kpisOk ? (kpis.data as SupabaseKpi[]).map(mapToViewModel) : mockKpis,
+    history: historyOk
+      ? (history.data as SupabaseKpiHistory[]).map((row) => ({
+          kpiId: row.kpi_id,
+          month: row.month,
+          value: row.value,
+        }))
+      : mockHistory,
   };
 }

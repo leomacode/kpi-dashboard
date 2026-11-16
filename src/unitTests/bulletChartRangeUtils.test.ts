@@ -46,40 +46,40 @@ describe("getTierMetaByValue", () => {
   it("returns correct tier for higher-is-better KPI", () => {
     // value=2000, gold=1440, platinum=4000 → Gold tier
     const result = getTierMetaByValue(higherIsBetter);
-    expect(result.name).toBe("Gold");
-    expect(result.colorKey).toBe("gold");
+    expect(result.label).toBe("Gold");
+    expect(result.key).toBe("gold");
   });
 
   it("returns correct tier for lower-is-better KPI", () => {
     // value=50.9, silver=60, gold=45 → Silver tier (50.9 is between 45 and 60)
     const result = getTierMetaByValue(lowerIsBetter);
-    expect(result.name).toBe("Silver");
-    expect(result.colorKey).toBe("silver");
+    expect(result.label).toBe("Silver");
+    expect(result.key).toBe("silver");
   });
 
   it("returns platinum when value exceeds platinum threshold (higher-is-better)", () => {
     const kpi = { ...higherIsBetter, value: 5000 };
     const result = getTierMetaByValue(kpi);
-    expect(result.name).toBe("Platinum");
+    expect(result.label).toBe("Platinum");
   });
 
   it("returns minimum when value is below bronze (higher-is-better)", () => {
     const kpi = { ...higherIsBetter, value: 100 };
     const result = getTierMetaByValue(kpi);
-    expect(result.name).toBe("Aspirant");
-    expect(result.colorKey).toBe("minimum");
+    expect(result.label).toBe("Aspirant");
+    expect(result.key).toBe("minimum");
   });
 
   it("returns platinum when value is below platinum threshold (lower-is-better)", () => {
     const kpi = { ...lowerIsBetter, value: 0 };
     const result = getTierMetaByValue(kpi);
-    expect(result.name).toBe("Platinum");
+    expect(result.label).toBe("Platinum");
   });
 
   it("returns minimum when value exceeds bronze threshold (lower-is-better)", () => {
     const kpi = { ...lowerIsBetter, value: 500 };
     const result = getTierMetaByValue(kpi);
-    expect(result.name).toBe("Aspirant");
+    expect(result.label).toBe("Aspirant");
   });
 });
 

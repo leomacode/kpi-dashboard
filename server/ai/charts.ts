@@ -9,6 +9,7 @@ import {
   findKpi,
   monthsWithData,
   periodLabel,
+  seriesInRange,
   type Period,
 } from "./metrics.js";
 
@@ -107,14 +108,7 @@ export function resolveChart(spec: ChartSpec, data: KpiData): ChartData {
         name: k.name,
         unit: k.unit,
         plan: k.planValue,
-        points: data.history
-          .filter(
-            (p) =>
-              p.kpiId === k.id &&
-              (!spec.from || p.month >= spec.from) &&
-              (!spec.to || p.month <= spec.to),
-          )
-          .map(({ month, value }) => ({ month, value })),
+        points: seriesInRange(data, k.id, spec.from, spec.to),
       };
     }
     case "bar": {
@@ -160,7 +154,6 @@ export function createChartRenderer(
       return {
         ok: false,
         summary: `Chart abandoned after ${maxAttempts} invalid attempts`,
-        attempt: attempts,
         attemptsLeft: 0,
         gaveUp: true,
         errors: ["No attempts left. Answer without a chart."],
@@ -185,7 +178,6 @@ export function createChartRenderer(
       summary: gaveUp
         ? `Chart invalid ${attempts}/${maxAttempts}, giving up: ${parsed.errors[0]}`
         : `Chart invalid (attempt ${attempts}/${maxAttempts}): ${parsed.errors[0]}`,
-      attempt: attempts,
       attemptsLeft: maxAttempts - attempts,
       gaveUp,
       errors: parsed.errors,

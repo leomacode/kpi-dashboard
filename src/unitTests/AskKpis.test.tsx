@@ -70,7 +70,6 @@ const barChart: ChartData = {
 const failed = (gaveUp: boolean): RenderChartResult => ({
   ok: false,
   summary: "Chart invalid",
-  attempt: gaveUp ? 3 : 1,
   attemptsLeft: gaveUp ? 0 : 2,
   gaveUp,
   errors: ["type: Invalid discriminator value"],

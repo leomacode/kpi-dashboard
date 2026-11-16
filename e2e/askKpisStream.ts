@@ -118,7 +118,6 @@ const invalidChart = (attempt: number) => ({
       attempt === 3
         ? "Chart invalid 3/3, giving up: type: Invalid discriminator value"
         : `Chart invalid (attempt ${attempt}/3): type: Invalid discriminator value`,
-    attempt,
     attemptsLeft: 3 - attempt,
     gaveUp: attempt === 3,
     errors: ["type: Invalid discriminator value"],

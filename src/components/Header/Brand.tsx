@@ -2,13 +2,6 @@ import styled from "styled-components";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
 
-type Props = {
-  label?: string;
-  overline?: string;
-  subtitle?: string;
-  logoSrc?: string;
-};
-
 const StyledRoot = styled.div`
   display: flex;
   align-items: center;
@@ -71,20 +64,16 @@ const StyledBrandSubtitle = styled.div`
   white-space: nowrap;
 `;
 
-const Brand = ({
-  label = "Sustainability Monitoring",
-  overline = "Greendairy.nl",
-  subtitle = "Farm Performance Dashboard",
-}: Props) => (
+const Brand = () => (
   <StyledRoot>
-    <StyledLogoLink to="/" aria-label={`${overline} home`}>
+    <StyledLogoLink to="/" aria-label="Greendairy.nl home">
       <Logo />
     </StyledLogoLink>
 
     <StyledTextBlock>
-      {overline && <StyledBrandOverline>{overline}</StyledBrandOverline>}
-      <StyledBrandTitle>{label}</StyledBrandTitle>
-      {subtitle && <StyledBrandSubtitle>{subtitle}</StyledBrandSubtitle>}
+      <StyledBrandOverline>Greendairy.nl</StyledBrandOverline>
+      <StyledBrandTitle>Sustainability Monitoring</StyledBrandTitle>
+      <StyledBrandSubtitle>Farm Performance Dashboard</StyledBrandSubtitle>
     </StyledTextBlock>
   </StyledRoot>
 );

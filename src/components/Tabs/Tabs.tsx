@@ -1,8 +1,7 @@
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 import { NavLink } from "react-router-dom";
 
 type TabItem = {
-  key: string;
   label: string;
   href: string;
 };
@@ -36,12 +35,6 @@ const StyledTabItem = styled.li`
   margin: 0;
 `;
 
-const activeStyles = css`
-  color: var(--color-tabs-accent);
-  background: var(--color-tabs-accent-bg);
-  border-bottom-color: var(--color-tabs-accent);
-`;
-
 const StyledNavLink = styled(NavLink)`
   display: inline-flex;
   align-items: center;
@@ -61,31 +54,33 @@ const StyledNavLink = styled(NavLink)`
     border-color 150ms ease;
 
   &:hover,
-  &:focus {
+  &:focus-visible {
     color: var(--color-text-primary);
     background: var(--color-hover-bg);
     text-decoration: none;
-    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
   }
 
   &.active {
-    ${activeStyles}
+    color: var(--color-tabs-accent);
+    background: var(--color-tabs-accent-bg);
+    border-bottom-color: var(--color-tabs-accent);
   }
 `;
 
-// ─── Components ───────────────────────────────────────────────────────────────
-
-const NavigationItem = ({ item }: { item: TabItem }) => (
-  <StyledTabItem>
-    <StyledNavLink to={item.href}>{item.label}</StyledNavLink>
-  </StyledTabItem>
-);
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const NavigationTabs = ({ items }: Props) => (
   <StyledListWrapper>
     <StyledList>
       {items.map((item) => (
-        <NavigationItem key={item.key} item={item} />
+        <StyledTabItem key={item.href}>
+          <StyledNavLink to={item.href}>{item.label}</StyledNavLink>
+        </StyledTabItem>
       ))}
     </StyledList>
   </StyledListWrapper>

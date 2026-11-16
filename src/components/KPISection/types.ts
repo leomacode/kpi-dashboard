@@ -29,7 +29,7 @@ export type SupabaseKpi = {
   platinum: number;
   plateau_label: string;
   explanation: string;
-  directionality: "higher-is-better" | "lower-is-better";
+  directionality: BulletChartDirectionality;
 };
 
 // One monthly reading. `month` is "YYYY-MM".

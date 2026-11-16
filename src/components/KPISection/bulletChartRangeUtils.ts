@@ -1,17 +1,21 @@
 import type { KPIViewModel, BulletChartDirectionality } from "./types";
 
-export type BulletChartSegmentKey =
-  | "minimum"
-  | "bronze"
-  | "silver"
-  | "gold"
-  | "platinum";
+// Worst → best. The single source for tier keys, names and order.
+export const TIERS = [
+  { key: "minimum", label: "Aspirant", description: "" },
+  { key: "bronze", label: "Bronze", description: "Basic certification level" },
+  { key: "silver", label: "Silver", description: "Advanced level" },
+  { key: "gold", label: "Gold", description: "High level" },
+  { key: "platinum", label: "Platinum", description: "Top level" },
+] as const;
+
+export type Tier = (typeof TIERS)[number];
+export type BulletChartSegmentKey = Tier["key"];
 
 export type BulletChartSegment = {
   key: BulletChartSegmentKey;
   label: string;
   description: string;
-  colorKey: BulletChartSegmentKey;
   from: number;
   to: number;
   modalRange: string;
@@ -85,69 +89,39 @@ export const getPositionInFixedTierSystem = (
   // making it visually clear which tier the value belongs to
   const EDGE_PAD = 2;
 
-  const tierOrder: Record<string, number> = {
-    minimum: 0,
-    bronze: 1,
-    silver: 2,
-    gold: 3,
-    platinum: 4,
+  const segMap = new Map(segments.map((s) => [s.key, s]));
+  const bounds = (key: BulletChartSegmentKey) => {
+    const seg = segMap.get(key);
+    return (
+      seg && { lo: Math.min(seg.from, seg.to), hi: Math.max(seg.from, seg.to) }
+    );
   };
 
-  // Ordered best → worst so we match the highest tier first
-  // when determining which segment contains the value
-  const segMap = new Map(segments.map((s) => [s.key, s]));
-  const tierKeys: BulletChartSegmentKey[] = [
-    "platinum",
-    "gold",
-    "silver",
-    "bronze",
-    "minimum",
-  ];
+  // Best → worst so the highest matching tier wins on a shared boundary.
   let matchedKey: BulletChartSegmentKey = "minimum";
-
-  for (const key of tierKeys) {
-    const seg = segMap.get(key);
-    if (!seg) continue;
-    const lo = Math.min(seg.from, seg.to);
-    const hi = Math.max(seg.from, seg.to);
-    const range = hi - lo;
-    if (range === 0) {
-      if (value === lo) {
-        matchedKey = key;
-        break;
-      }
-    } else {
-      if (value >= lo && value <= hi) {
-        matchedKey = key;
-        break;
-      }
+  for (const { key } of [...TIERS].reverse()) {
+    const b = bounds(key);
+    if (b && value >= b.lo && value <= b.hi) {
+      matchedKey = key;
+      break;
     }
   }
 
+  // Values beyond the drawn domain belong to the open-ended end tiers.
+  const plat = bounds("platinum");
+  const min = bounds("minimum");
   if (directionality === "lower-is-better") {
-    const platSeg = segMap.get("platinum");
-    const minSeg = segMap.get("minimum");
-    if (platSeg && value < Math.min(platSeg.from, platSeg.to))
-      matchedKey = "platinum";
-    else if (minSeg && value > Math.max(minSeg.from, minSeg.to))
-      matchedKey = "minimum";
+    if (plat && value < plat.lo) matchedKey = "platinum";
+    else if (min && value > min.hi) matchedKey = "minimum";
   } else {
-    const platSeg = segMap.get("platinum");
-    const minSeg = segMap.get("minimum");
-    if (platSeg && value > Math.max(platSeg.from, platSeg.to))
-      matchedKey = "platinum";
-    else if (minSeg && value < Math.min(minSeg.from, minSeg.to))
-      matchedKey = "minimum";
+    if (plat && value > plat.hi) matchedKey = "platinum";
+    else if (min && value < min.lo) matchedKey = "minimum";
   }
 
-  const tierIndex = tierOrder[matchedKey];
-  const blockStart = tierIndex * TIER_WIDTH;
-  const seg = segMap.get(matchedKey);
+  const seg = bounds(matchedKey);
   if (!seg) return 0;
-
-  const lo = Math.min(seg.from, seg.to);
-  const hi = Math.max(seg.from, seg.to);
-  const range = hi - lo;
+  const blockStart = TIERS.findIndex((t) => t.key === matchedKey) * TIER_WIDTH;
+  const range = seg.hi - seg.lo;
 
   let fractionInSegment: number;
   if (range === 0) {
@@ -155,14 +129,13 @@ export const getPositionInFixedTierSystem = (
   } else {
     // Invert fraction for lower-is-better: a lower value within the tier
     // should appear further right (closer to Platinum visually)
-    const rawFraction = (value - lo) / range;
+    const rawFraction = (value - seg.lo) / range;
     fractionInSegment =
       directionality === "lower-is-better" ? 1 - rawFraction : rawFraction;
   }
 
   const paddedWidth = TIER_WIDTH - 2 * EDGE_PAD;
-  const position = blockStart + EDGE_PAD + fractionInSegment * paddedWidth;
-  return Math.max(0, Math.min(100, position));
+  return clamp(blockStart + EDGE_PAD + fractionInSegment * paddedWidth, 0, 100);
 };
 
 const formatRangeNumber = (n: number): string => {
@@ -178,23 +151,9 @@ const justBelow = (value: number): number => {
   return value - Math.pow(10, -decimals);
 };
 
-const adjustBoundary = (value: number, direction: "up" | "down"): number => {
-  if (Number.isInteger(value))
-    return direction === "up" ? value + 1 : value - 1;
-  return value;
-};
-
-const formatClosedRange = (from: number, to: number): string => {
-  const lower = Math.min(from, to);
-  const higher = Math.max(from, to);
-  const adjustedLower = adjustBoundary(lower, "up");
-  return `${formatRangeNumber(adjustedLower)} - ${formatRangeNumber(higher)}`;
-};
-
-const formatOpenHighRange = (from: number): string => {
-  const adjusted = Number.isInteger(from) ? from + 1 : from;
-  return `${formatRangeNumber(adjusted)}+`;
-};
+// First integer past a boundary; non-integer boundaries stay as they are.
+const justAbove = (value: number): number =>
+  Number.isInteger(value) ? value + 1 : value;
 
 const computeDomain = (kpi: KPIViewModel) => {
   const { directionality } = kpi;
@@ -252,41 +211,18 @@ const computeDomain = (kpi: KPIViewModel) => {
   };
 };
 
-export const getTierKeyByValue = (kpi: KPIViewModel): BulletChartSegmentKey => {
+export const getTierMetaByValue = (kpi: KPIViewModel): Tier => {
   const { directionality, value } = kpi;
-  const { bronze, silver, gold, platinum } = normalizeThresholds(
-    kpi,
-    kpi.min,
-    directionality,
+  const thresholds = normalizeThresholds(kpi, kpi.min, directionality);
+  const reached = (t: number) =>
+    directionality === "higher-is-better" ? value >= t : value <= t;
+  // Best → worst: the first threshold reached is the tier.
+  return (
+    [...TIERS]
+      .reverse()
+      .find((t) => t.key !== "minimum" && reached(thresholds[t.key])) ??
+    TIERS[0]
   );
-
-  if (directionality === "higher-is-better") {
-    if (value >= platinum) return "platinum";
-    if (value >= gold) return "gold";
-    if (value >= silver) return "silver";
-    if (value >= bronze) return "bronze";
-    return "minimum";
-  }
-
-  if (value <= platinum) return "platinum";
-  if (value <= gold) return "gold";
-  if (value <= silver) return "silver";
-  if (value <= bronze) return "bronze";
-  return "minimum";
-};
-
-export const getTierMetaByValue = (
-  kpi: KPIViewModel,
-): { name: string; colorKey: BulletChartSegmentKey } => {
-  const key = getTierKeyByValue(kpi);
-  const nameMap: Record<BulletChartSegmentKey, string> = {
-    minimum: "Aspirant",
-    bronze: "Bronze",
-    silver: "Silver",
-    gold: "Gold",
-    platinum: "Platinum",
-  };
-  return { name: nameMap[key], colorKey: key };
 };
 
 export const buildBulletChartRanges = (
@@ -301,112 +237,50 @@ export const buildBulletChartRanges = (
     gold,
     platinum,
   } = computeDomain(kpi);
+  const higher = directionality === "higher-is-better";
+  const fmt = formatRangeNumber;
+  const last = TIERS.length - 1;
 
-  const raw =
-    directionality === "higher-is-better"
-      ? [
-          {
-            key: "minimum" as BulletChartSegmentKey,
-            label: "Aspirant",
-            description: "Below bronze level",
-            colorKey: "minimum" as BulletChartSegmentKey,
-            from: domainMin,
-            to: bronze,
-            modalRange:
-              domainMin >= bronze
-                ? `< ${formatRangeNumber(bronze)}`
-                : `${formatRangeNumber(domainMin)} - ${formatRangeNumber(justBelow(bronze))}`,
-          },
-          {
-            key: "bronze" as BulletChartSegmentKey,
-            label: "Bronze",
-            description: "Basic certification level",
-            colorKey: "bronze" as BulletChartSegmentKey,
-            from: bronze,
-            to: silver,
-            modalRange: `${formatRangeNumber(bronze)} - ${formatRangeNumber(justBelow(silver))}`,
-          },
-          {
-            key: "silver" as BulletChartSegmentKey,
-            label: "Silver",
-            description: "Advanced level",
-            colorKey: "silver" as BulletChartSegmentKey,
-            from: silver,
-            to: gold,
-            modalRange: `${formatRangeNumber(silver)} - ${formatRangeNumber(justBelow(gold))}`,
-          },
-          {
-            key: "gold" as BulletChartSegmentKey,
-            label: "Gold",
-            description: "High level",
-            colorKey: "gold" as BulletChartSegmentKey,
-            from: gold,
-            to: platinum,
-            modalRange: `${formatRangeNumber(gold)} - ${formatRangeNumber(justBelow(platinum))}`,
-          },
-          {
-            key: "platinum" as BulletChartSegmentKey,
-            label: "Platinum",
-            description: "Top level",
-            colorKey: "platinum" as BulletChartSegmentKey,
-            from: platinum,
-            to: domainMax,
-            modalRange: `${formatRangeNumber(platinum)}+`,
-          },
-        ]
-      : [
-          {
-            key: "minimum" as BulletChartSegmentKey,
-            label: "Aspirant",
-            description: "Above bronze level",
-            colorKey: "minimum" as BulletChartSegmentKey,
-            from: bronze,
-            to: domainMax,
-            modalRange: formatOpenHighRange(bronze),
-          },
-          {
-            key: "bronze" as BulletChartSegmentKey,
-            label: "Bronze",
-            description: "Basic certification level",
-            colorKey: "bronze" as BulletChartSegmentKey,
-            from: silver,
-            to: bronze,
-            modalRange: formatClosedRange(silver, bronze),
-          },
-          {
-            key: "silver" as BulletChartSegmentKey,
-            label: "Silver",
-            description: "Advanced level",
-            colorKey: "silver" as BulletChartSegmentKey,
-            from: gold,
-            to: silver,
-            modalRange: formatClosedRange(gold, silver),
-          },
-          {
-            key: "gold" as BulletChartSegmentKey,
-            label: "Gold",
-            description: "High level",
-            colorKey: "gold" as BulletChartSegmentKey,
-            from: platinum,
-            to: gold,
-            modalRange: formatClosedRange(platinum, gold),
-          },
-          {
-            key: "platinum" as BulletChartSegmentKey,
-            label: "Platinum",
-            description: "Top level",
-            colorKey: "platinum" as BulletChartSegmentKey,
-            from: domainMin,
-            to: platinum,
-            modalRange: `≤ ${formatRangeNumber(platinum)}`,
-          },
-        ];
+  // Tier boundaries, worst tier's outer edge first.
+  const edges = higher
+    ? [domainMin, bronze, silver, gold, platinum, domainMax]
+    : [domainMax, bronze, silver, gold, platinum, domainMin];
 
-  const segments: BulletChartSegment[] = raw.map((s) => ({
-    ...s,
-    from: clamp(s.from, domainMin, domainMax),
-    to: clamp(s.to, domainMin, domainMax),
-  }));
+  const segments = TIERS.map((t, i): BulletChartSegment => {
+    // Segments always run low → high numerically.
+    const [from, to] = higher
+      ? [edges[i], edges[i + 1]]
+      : [edges[i + 1], edges[i]];
+
+    let modalRange: string;
+    if (higher) {
+      if (i === 0)
+        modalRange =
+          domainMin >= bronze
+            ? `< ${fmt(bronze)}`
+            : `${fmt(domainMin)} - ${fmt(justBelow(bronze))}`;
+      else if (i === last) modalRange = `${fmt(platinum)}+`;
+      else modalRange = `${fmt(from)} - ${fmt(justBelow(to))}`;
+    } else {
+      if (i === 0) modalRange = `${fmt(justAbove(bronze))}+`;
+      else if (i === last) modalRange = `≤ ${fmt(platinum)}`;
+      else modalRange = `${fmt(justAbove(from))} - ${fmt(to)}`;
+    }
+
+    return {
+      key: t.key,
+      label: t.label,
+      description:
+        i === 0
+          ? higher
+            ? "Below bronze level"
+            : "Above bronze level"
+          : t.description,
+      from: clamp(from, domainMin, domainMax),
+      to: clamp(to, domainMin, domainMax),
+      modalRange,
+    };
+  });
 
   return { domainMin, domainMax, directionality, segments };
 };

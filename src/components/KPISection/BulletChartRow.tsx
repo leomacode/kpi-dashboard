@@ -224,7 +224,7 @@ const BulletChartRow = ({ kpi, onClick }: Props) => {
             {segments.map((s) => (
               <StyledSeg
                 key={s.key}
-                $tier={s.colorKey}
+                $tier={s.key}
                 data-testid="chart-segment"
               />
             ))}

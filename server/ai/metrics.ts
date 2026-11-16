@@ -19,6 +19,23 @@ export function findKpi(
 export const monthsWithData = (data: KpiData) =>
   [...new Set(data.history.map((p) => p.month))].sort();
 
+// One metric's monthly points, optionally limited to a month range (inclusive).
+// "YYYY-MM" strings sort chronologically, so plain comparison works.
+export const seriesInRange = (
+  data: KpiData,
+  kpiId: string,
+  from?: string,
+  to?: string,
+) =>
+  data.history
+    .filter(
+      (p) =>
+        p.kpiId === kpiId &&
+        (!from || p.month >= from) &&
+        (!to || p.month <= to),
+    )
+    .map(({ month, value }) => ({ month, value }));
+
 // Float noise (22.6 - 18.4 = 4.200000000000003) would leak into answers.
 export const round = (n: number) => Math.round(n * 100) / 100;
 

@@ -1,27 +1,5 @@
 import styled from "styled-components";
 
-type Props = {
-  lastSyncMinutes?: number;
-  label?: string;
-};
-
-type SyncTone = "ok" | "warn";
-
-const getSyncStatus = (minutes: number): { text: string; tone: SyncTone } => {
-  if (minutes < 60) {
-    return { text: `${minutes} minutes ago`, tone: "ok" };
-  }
-  if (minutes < 1440) {
-    const hours = Math.floor(minutes / 60);
-    return {
-      text: `${hours} ${hours === 1 ? "hour" : "hours"} ago`,
-      tone: "ok",
-    };
-  }
-  const days = Math.floor(minutes / 1440);
-  return { text: `${days} ${days === 1 ? "day" : "days"} ago`, tone: "warn" };
-};
-
 const StyledRoot = styled.div`
   display: flex;
   flex-direction: column;
@@ -81,13 +59,6 @@ const StyledOk = styled(StyledValueRow)`
   }
 `;
 
-const StyledWarn = styled(StyledValueRow)`
-  color: var(--color-warn);
-  ${StyledDot} {
-    background: var(--color-warn-bg);
-  }
-`;
-
 const StyledLogging = styled(StyledValueRow)`
   font-size: 0.875rem;
   margin-top: 1rem;
@@ -99,21 +70,16 @@ const StyledLogging = styled(StyledValueRow)`
   }
 `;
 
-const SyncStatusIndicator = ({
-  lastSyncMinutes = 15,
-  label = "Data synchronized",
-}: Props) => {
-  const status = getSyncStatus(lastSyncMinutes);
-  const ValueRow = status.tone === "ok" ? StyledOk : StyledWarn;
-
+// Static demo values: there is no real sync source yet.
+const SyncStatusIndicator = () => {
   return (
     <StyledRoot>
       <StyledBlock>
-        <StyledLabel>{label}</StyledLabel>
-        <ValueRow>
+        <StyledLabel>Data synchronized</StyledLabel>
+        <StyledOk>
           <StyledDot />
-          {status.text}
-        </ValueRow>
+          15 minutes ago
+        </StyledOk>
         <StyledLogging>
           {/* Kept SVG dimensions as numbers as they are coordinate units, not CSS units */}
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none">

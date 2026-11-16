@@ -7,8 +7,10 @@ import {
   findKpi,
   monthsWithData,
   periodLabel,
+  seriesInRange,
   type Comparison,
 } from "./metrics.js";
+import { TIERS } from "../../src/components/KPISection/bulletChartRangeUtils.js";
 import { MAX_CHART_ATTEMPTS, createChartRenderer } from "./charts.js";
 import {
   ChartSpec,
@@ -54,7 +56,7 @@ export function createTools(data: KpiData) {
           .enum(["higher-is-better", "lower-is-better"])
           .optional(),
         tier: z
-          .enum(["Aspirant", "Bronze", "Silver", "Gold", "Platinum"])
+          .enum(TIERS.map((t) => t.label))
           .optional()
           .describe("Only metrics currently in this tier"),
       }),
@@ -154,15 +156,7 @@ export function createTools(data: KpiData) {
         const kpi = findKpi(data.kpis, metric);
         if (!kpi) return unknownMetric(data.kpis, metric);
 
-        // "YYYY-MM" strings sort chronologically, so plain comparison works.
-        const points = data.history
-          .filter(
-            (p) =>
-              p.kpiId === kpi.id &&
-              (!from || p.month >= from) &&
-              (!to || p.month <= to),
-          )
-          .map(({ month, value }) => ({ month, value }));
+        const points = seriesInRange(data, kpi.id, from, to);
 
         const range = points.length
           ? `${points[0].month} → ${points[points.length - 1].month}`
@@ -183,5 +177,3 @@ export function createTools(data: KpiData) {
     }),
   };
 }
-
-export type KpiTools = ReturnType<typeof createTools>;

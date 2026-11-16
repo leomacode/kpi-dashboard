@@ -178,13 +178,11 @@ describe("createChartRenderer (retry loop)", () => {
     const render = createChartRenderer(data);
     expect(render(BAD)).toMatchObject({
       ok: false,
-      attempt: 1,
       attemptsLeft: 2,
       gaveUp: false,
     });
     expect(render("{oops")).toMatchObject({
       ok: false,
-      attempt: 2,
       attemptsLeft: 1,
       gaveUp: false,
     });
@@ -198,7 +196,6 @@ describe("createChartRenderer (retry loop)", () => {
     const third = render(BAD);
     expect(third).toMatchObject({
       ok: false,
-      attempt: 3,
       attemptsLeft: 0,
       gaveUp: true,
     });
@@ -210,7 +207,11 @@ describe("createChartRenderer (retry loop)", () => {
     render(BAD);
     render(BAD);
     render(BAD);
-    expect(render(LINE)).toMatchObject({ ok: false, gaveUp: true, attempt: 3 });
+    expect(render(LINE)).toMatchObject({
+      ok: false,
+      gaveUp: true,
+      attemptsLeft: 0,
+    });
   });
 
   it("starts a fresh count for a second chart after a success", () => {
@@ -218,7 +219,7 @@ describe("createChartRenderer (retry loop)", () => {
     render(BAD);
     render(BAD);
     render(LINE);
-    expect(render(BAD)).toMatchObject({ attempt: 1, gaveUp: false });
+    expect(render(BAD)).toMatchObject({ attemptsLeft: 2, gaveUp: false });
   });
 
   it("honours a custom attempt limit", () => {

@@ -3,7 +3,6 @@ import styled from "styled-components";
 
 type Props = {
   children: ReactNode;
-  fallback?: ReactNode;
 };
 
 type State = {
@@ -84,12 +83,10 @@ class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        this.props.fallback ?? (
-          <DefaultFallback
-            message={this.state.message}
-            onRetry={this.handleRetry}
-          />
-        )
+        <DefaultFallback
+          message={this.state.message}
+          onRetry={this.handleRetry}
+        />
       );
     }
 

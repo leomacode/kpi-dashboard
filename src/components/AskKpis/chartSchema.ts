@@ -90,7 +90,6 @@ export type RenderChartResult =
   | {
       ok: false;
       summary: string;
-      attempt: number;
       attemptsLeft: number;
       gaveUp: boolean;
       errors: string[];

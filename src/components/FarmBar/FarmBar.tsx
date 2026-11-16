@@ -1,17 +1,6 @@
 import styled from "styled-components";
 import ThankYouBanner from "./ThankYouBanner";
 
-type Farm = {
-  name: string;
-  ubn: string;
-  address: string;
-};
-
-type Props = {
-  farm?: Farm;
-  showBanner?: boolean;
-};
-
 const StyledHeader = styled.div`
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
@@ -64,26 +53,20 @@ const StyledMetaItem = styled.span`
   }
 `;
 
-const DEFAULT_FARM: Farm = {
-  name: "Green Valley Dairy Farm",
-  ubn: "482910",
-  address: "14 Meadow Lane, Utrecht",
-};
-
-const FarmBar = ({ farm = DEFAULT_FARM, showBanner = true }: Props) => (
+const FarmBar = () => (
   <>
     <StyledHeader>
       <StyledHeaderTop>
         <div>
-          <StyledHeading>{farm.name}</StyledHeading>
+          <StyledHeading>Green Valley Dairy Farm</StyledHeading>
           <StyledMeta>
-            <StyledMetaItem>UBN: {farm.ubn}</StyledMetaItem>
-            <StyledMetaItem>{farm.address}</StyledMetaItem>
+            <StyledMetaItem>UBN: 482910</StyledMetaItem>
+            <StyledMetaItem>14 Meadow Lane, Utrecht</StyledMetaItem>
           </StyledMeta>
         </div>
       </StyledHeaderTop>
     </StyledHeader>
-    {showBanner && <ThankYouBanner />}
+    <ThankYouBanner />
   </>
 );
 

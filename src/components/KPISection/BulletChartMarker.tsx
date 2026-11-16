@@ -24,8 +24,8 @@ const StyledMarkerIcon = styled.svg`
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-const BulletChartMarker = ({ style, ...rest }: Props) => (
-  <StyledMarkerRoot style={style} {...rest}>
+const BulletChartMarker = ({ style }: Props) => (
+  <StyledMarkerRoot style={style}>
     <StyledMarkerIcon
       width="12"
       height="24"

@@ -1,11 +1,4 @@
-import {
-  useMemo,
-  useCallback,
-  useEffect,
-  useState,
-  useRef,
-  useId,
-} from "react";
+import { useEffect, useState, useRef, useId } from "react";
 import styled, { css } from "styled-components";
 import type { KPIViewModel } from "./types";
 import {
@@ -330,8 +323,8 @@ const StyledFooterBtn = styled.button`
 // ─── Component ───────────────────────────────────────────────────────────────
 
 const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
-  const currentTier = useMemo(() => getTierMetaByValue(kpi), [kpi]);
-  const { segments } = useMemo(() => buildBulletChartRanges(kpi), [kpi]);
+  const currentTier = getTierMetaByValue(kpi);
+  const { segments } = buildBulletChartRanges(kpi);
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -343,35 +336,30 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
   // It is initialised fresh each time the user clicks ✏️, from the current kpi.planValue.
   const [inputValue, setInputValue] = useState<string>("");
 
-  const handleStartEdit = useCallback(() => {
+  const handleStartEdit = () => {
     // Seed the input with the current plan value when opening the editor
     setInputValue(kpi.planValue != null ? String(kpi.planValue) : "");
     setIsEditing(true);
-  }, [kpi.planValue]);
+  };
 
-  const handleSave = useCallback(() => {
+  const handleSave = () => {
     const parsed = parseFloat(inputValue);
     const newValue = Number.isFinite(parsed) ? parsed : null;
     onPlanValueChange(newValue); // push up to KPISection
     setIsEditing(false); // exit edit mode — display reads kpi.planValue (now updated)
-  }, [inputValue, onPlanValueChange]);
+  };
 
-  const handleCancel = useCallback(() => {
-    setIsEditing(false);
-  }, []);
+  const handleCancel = () => setIsEditing(false);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") handleSave();
-      if (e.key === "Escape") {
-        // Handled here: stop the dialog from also receiving a cancel request
-        // for this keypress, which would close it right after the edit ends.
-        e.preventDefault();
-        handleCancel();
-      }
-    },
-    [handleSave, handleCancel],
-  );
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSave();
+    if (e.key === "Escape") {
+      // Handled here: stop the dialog from also receiving a cancel request
+      // for this keypress, which would close it right after the edit ends.
+      e.preventDefault();
+      handleCancel();
+    }
+  };
 
   // Esc fires `cancel` on a modal dialog. Prevent the browser from closing
   // it so React state stays the source of truth: Esc cancels an edit first,
@@ -400,16 +388,13 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
     };
   }, []);
 
-  const handleOverlayClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.target !== e.currentTarget) return;
-      // While editing, ignore backdrop clicks so an accidental click outside
-      // does not silently discard the user's draft plan value.
-      if (isEditing) return;
-      onClose();
-    },
-    [onClose, isEditing],
-  );
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target !== e.currentTarget) return;
+    // While editing, ignore backdrop clicks so an accidental click outside
+    // does not silently discard the user's draft plan value.
+    if (isEditing) return;
+    onClose();
+  };
 
   return (
     <StyledDialog
@@ -445,8 +430,8 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
                 {formatValue(kpi.value)}
                 <span className="unit"> {kpi.unit}</span>
               </div>
-              <StyledTierBadge data-tier={currentTier.colorKey}>
-                {currentTier.name}
+              <StyledTierBadge data-tier={currentTier.key}>
+                {currentTier.label}
               </StyledTierBadge>
             </StyledCard>
 
@@ -516,7 +501,7 @@ const BulletChartDetailModal = ({ kpi, onClose, onPlanValueChange }: Props) => {
             <StyledSectionTitle>Performance Score</StyledSectionTitle>
             <StyledRanges>
               {segments.map((s) => (
-                <StyledRangeRow key={s.key} data-tier={s.colorKey}>
+                <StyledRangeRow key={s.key} data-tier={s.key}>
                   <div>
                     <div className="label">{s.label}</div>
                     <div className="desc">{s.description}</div>

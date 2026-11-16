@@ -6,6 +6,7 @@ import {
 } from "ai";
 import type { KpiData } from "./data.js";
 import { createTools } from "./tools.js";
+import { monthsWithData } from "./metrics.js";
 
 // Hard ceiling on model ↔ tool round-trips per question.
 export const MAX_STEPS = 8;
@@ -20,7 +21,7 @@ export const TIMEOUT = {
 };
 
 export function buildInstructions(data: KpiData, today: Date): string {
-  const months = [...new Set(data.history.map((p) => p.month))].sort();
+  const months = monthsWithData(data);
   return [
     "You answer questions about a farm's sustainability KPIs.",
     `Today is ${today.toISOString().slice(0, 10)}. Monthly data covers ${months[0]} to ${months[months.length - 1]}; "last month" means the latest month with data.`,

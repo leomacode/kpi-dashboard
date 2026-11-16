@@ -4,13 +4,10 @@ import BulletChartRow from "./BulletChartRow";
 import BulletChartDetailModal from "./BulletChartDetailModal";
 import { supabase } from "../../lib/supabase";
 import { parseKpiRows } from "./mappers";
+import { TIERS } from "./bulletChartRangeUtils";
 import { mockKpis } from "./data/mockKpis";
 
 import type { KPIViewModel } from "./types";
-
-type Props = {
-  title?: string;
-};
 
 // ─── Styled Components ───────────────────────────────────────────────────────
 
@@ -91,15 +88,13 @@ const StyledStatus = styled.div`
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const TIER_LABELS = ["Aspirant", "Bronze", "Silver", "Gold", "Platinum"];
-
 // Module-level cache so KPIs survive route unmount/remount — switching tabs
 // must not refetch from Supabase or flash the loading state.
 let kpiCache: KPIViewModel[] | null = null;
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-const KPISection = ({ title = "Main KPIs" }: Props) => {
+const KPISection = () => {
   const [kpis, setKpis] = useState<KPIViewModel[]>(kpiCache ?? []);
   const [loading, setLoading] = useState(kpiCache === null);
   const [selectedKpiId, setSelectedKpiId] = useState<string | null>(null);
@@ -152,10 +147,7 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
     };
   }, []);
 
-  const selectedKpi =
-    selectedKpiId != null
-      ? (kpis.find((k) => k.id === selectedKpiId) ?? null)
-      : null;
+  const selectedKpi = kpis.find((k) => k.id === selectedKpiId);
 
   const handleOpen = useCallback((kpiId: string) => {
     setSelectedKpiId(kpiId);
@@ -205,7 +197,7 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
     <StyledKpiCard>
       <StyledKpiCardHeader>
         <div>
-          <StyledKpiTitle>{title}</StyledKpiTitle>
+          <StyledKpiTitle>Main KPIs</StyledKpiTitle>
           <StyledKpiSubtitle>
             Click a KPI for details, thresholds and explanation.
           </StyledKpiSubtitle>
@@ -219,8 +211,8 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
           <StyledKpiColumnHeaderRow>
             <StyledKpiSpacerCol />
             <StyledKpiChartLabels>
-              {TIER_LABELS.map((label) => (
-                <div key={label}>{label}</div>
+              {TIERS.map((t) => (
+                <div key={t.key}>{t.label}</div>
               ))}
             </StyledKpiChartLabels>
             <StyledKpiValueColHeader />
@@ -236,7 +228,7 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
 
       {selectedKpi && (
         <BulletChartDetailModal
-          key={`${selectedKpi.id}`}
+          key={selectedKpi.id}
           kpi={selectedKpi}
           onClose={handleClose}
           onPlanValueChange={(value) =>
@@ -249,4 +241,5 @@ const KPISection = ({ title = "Main KPIs" }: Props) => {
 };
 
 KPISection.displayName = "KPISection";
+
 export default KPISection;

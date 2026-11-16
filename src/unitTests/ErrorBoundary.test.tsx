@@ -51,15 +51,6 @@ describe("ErrorBoundary", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders custom fallback when provided", () => {
-    render(
-      <ErrorBoundary fallback={<div>Custom error UI</div>}>
-        <BrokenComponent />
-      </ErrorBoundary>,
-    );
-    expect(screen.getByText("Custom error UI")).toBeInTheDocument();
-  });
-
   it("recovers when retry button is clicked", () => {
     // This test verifies the retry resets the error state
     // In practice the child will throw again, but the boundary resets

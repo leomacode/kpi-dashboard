@@ -38,8 +38,6 @@ export const AskRequest = z.object({
     ),
 });
 
-export type AskRequest = z.infer<typeof AskRequest>;
-
 const text = (status: number, body: string, headers: HeadersInit = {}) =>
   new Response(body, {
     status,

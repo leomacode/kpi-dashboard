@@ -12,8 +12,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 const AskKpisPanel = lazy(() => import("./components/AskKpis/AskKpisPanel"));
 
 const TABS = [
-  { key: "kpis", label: "KPIs", href: "/kpis" },
-  { key: "farm", label: "Farm Info", href: "/farm" },
+  { label: "KPIs", href: "/kpis" },
+  { label: "Farm Info", href: "/farm" },
 ];
 
 export default function App() {
@@ -31,7 +31,7 @@ export default function App() {
                 path="/kpis"
                 element={
                   <>
-                    <KPISection title="Main KPIs" />
+                    <KPISection />
                     <Suspense fallback={null}>
                       <AskKpisPanel />
                     </Suspense>

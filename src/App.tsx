@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import Header from "./components/Header/Header";
 import FarmBar from "./components/FarmBar/FarmBar";
 import NavigationTabs from "./components/Tabs/Tabs";
@@ -32,7 +32,9 @@ export default function App() {
                 element={
                   <>
                     <KPISection />
-                    <Suspense fallback={null}>
+                    <Suspense
+                      fallback={<Spinner role="status" aria-label="Loading" />}
+                    >
                       <AskKpisPanel />
                     </Suspense>
                   </>
@@ -61,4 +63,20 @@ const Main = styled.main`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+`;
+
+const spin = keyframes`
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const Spinner = styled.div`
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: var(--space-4) auto;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: ${spin} 0.8s linear infinite;
 `;

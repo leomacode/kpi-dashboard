@@ -32,7 +32,12 @@ const devApi = (): Plugin => ({
 });
 
 export default defineConfig({
-  plugins: [react(), devApi()],
+  plugins: [
+    // Names styled components after their variable (e.g. "App__Wrapper")
+    // instead of "styled.div" in React DevTools and class names.
+    react({ babel: { plugins: ["babel-plugin-styled-components"] } }),
+    devApi(),
+  ],
   test: {
     environment: "happy-dom",
     globals: true,

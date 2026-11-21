@@ -89,3 +89,13 @@ export function chartsOf(message: UIMessage): {
     results.some(({ result }) => !result.ok && result.gaveUp);
   return { charts, chartFailed };
 }
+
+// Tool steps stream before any answer text, so while a reply is in flight the
+// panel shows a status line instead of an empty answer until this is true.
+export const hasAnswerText = (messages: UIMessage[]): boolean => {
+  const last = messages[messages.length - 1];
+  return (
+    last?.role === "assistant" &&
+    last.parts.some((p) => p.type === "text" && p.text.trim() !== "")
+  );
+};

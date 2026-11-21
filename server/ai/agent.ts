@@ -62,6 +62,11 @@ export function runAgent({
       messages,
       tools,
       stopWhen: isStepCount(MAX_STEPS),
+      // Gemini thinks before every step by default; this task is lookup +
+      // phrasing, so keep it minimal. Other providers ignore this key.
+      providerOptions: {
+        google: { thinkingConfig: { thinkingLevel: "minimal" } },
+      },
       timeout: TIMEOUT,
       // Retry provider errors that arrive after streaming started (e.g. a
       // mid-stream 503 "high demand"); off by default in the SDK.

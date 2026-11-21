@@ -1,5 +1,5 @@
 import { memo, useId, useRef, useState, type FormEvent } from "react";
-import { useChat } from "@ai-sdk/react";
+import { Chat, useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import styled from "styled-components";
 import { describeError, toWireMessages } from "./wire";
@@ -14,11 +14,14 @@ const SUGGESTIONS = [
   "Which KPIs are behind their plan?",
 ];
 
-// Module-level so useChat sees one stable transport across renders.
-const transport = new DefaultChatTransport({
-  api: "/api/ask",
-  prepareSendMessagesRequest: ({ messages }) => ({
-    body: { messages: toWireMessages(messages) },
+// Module-level so the conversation survives the panel unmounting on tab
+// switches (ponytail: lives until page reload; persist to storage if needed).
+const chat = new Chat<UIMessage>({
+  transport: new DefaultChatTransport({
+    api: "/api/ask",
+    prepareSendMessagesRequest: ({ messages }) => ({
+      body: { messages: toWireMessages(messages) },
+    }),
   }),
 });
 
@@ -241,7 +244,7 @@ const AskKpisPanel = () => {
     stop,
     regenerate,
   } = useChat({
-    transport,
+    chat,
     // Batch streamed tokens into at most ~20 renders per second.
     throttle: 50,
   });

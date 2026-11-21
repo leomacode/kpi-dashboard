@@ -15,7 +15,7 @@ const SUGGESTIONS = [
 ];
 
 // Module-level so the conversation survives the panel unmounting on tab
-// switches (ponytail: lives until page reload; persist to storage if needed).
+// switches. Deliberately in memory only: a page reload starts a fresh chat.
 const chat = new Chat<UIMessage>({
   transport: new DefaultChatTransport({
     api: "/api/ask",

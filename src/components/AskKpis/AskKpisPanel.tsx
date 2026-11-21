@@ -5,7 +5,7 @@ import styled from "styled-components";
 import { describeError, toWireMessages } from "./wire";
 import { ASK_LIMITS } from "./limits";
 import ShowTheWork from "./ShowTheWork";
-import { chartsOf, toToolSteps } from "./toolSteps";
+import { chartsOf, hasAnswerText, toToolSteps } from "./toolSteps";
 import AnswerChart from "./charts/AnswerChart";
 
 const SUGGESTIONS = [
@@ -255,6 +255,8 @@ const AskKpisPanel = () => {
   const hintId = useId();
 
   const busy = status === "submitted" || status === "streaming";
+  const waiting = busy && !hasAnswerText(messages);
+  const last = messages[messages.length - 1];
   const question = input.trim();
 
   const ask = (text: string) => {
@@ -295,12 +297,16 @@ const AskKpisPanel = () => {
       </StyledHeader>
 
       <StyledLog aria-label="Conversation" aria-live="polite" aria-busy={busy}>
-        {messages.map((m) => (
-          <MessageItem key={m.id} message={m} />
-        ))}
+        {messages.map((m) =>
+          // The answer appears once its text does; until then the status
+          // line below covers the wait.
+          waiting && m === last && m.role === "assistant" ? null : (
+            <MessageItem key={m.id} message={m} />
+          ),
+        )}
       </StyledLog>
 
-      {status === "submitted" && (
+      {waiting && (
         <StyledStatus role="status">Looking at your KPIs…</StyledStatus>
       )}
 

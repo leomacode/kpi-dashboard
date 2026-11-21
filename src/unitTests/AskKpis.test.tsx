@@ -2,7 +2,11 @@ import { describe, it, expect } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import type { UIMessage } from "ai";
 import { describeError, toWireMessages } from "../components/AskKpis/wire";
-import { chartsOf, toToolSteps } from "../components/AskKpis/toolSteps";
+import {
+  chartsOf,
+  hasAnswerText,
+  toToolSteps,
+} from "../components/AskKpis/toolSteps";
 import ShowTheWork from "../components/AskKpis/ShowTheWork";
 import AnswerChart from "../components/AskKpis/charts/AnswerChart";
 import { monthLabel } from "../components/AskKpis/charts/monthLabel";
@@ -169,6 +173,26 @@ describe("toToolSteps", () => {
       assistant(toolPart("renderChart", { spec: "{oops" }, failed(false))),
     );
     expect(step.input).toEqual({ spec: "{oops" });
+  });
+});
+
+describe("hasAnswerText", () => {
+  it("is false until the latest assistant message has text", () => {
+    const q = text("user", "Which KPIs are behind plan?");
+    const toolsOnly: UIMessage = {
+      id: "a",
+      role: "assistant",
+      parts: [toolPart("listMetrics", {}, { summary: "7 metrics" })],
+    };
+    expect(hasAnswerText([q])).toBe(false);
+    expect(hasAnswerText([q, toolsOnly])).toBe(false);
+    expect(
+      hasAnswerText([
+        q,
+        { ...toolsOnly, parts: [{ type: "text", text: " " }] },
+      ]),
+    ).toBe(false);
+    expect(hasAnswerText([q, text("assistant", "Bulk Milk Urea…")])).toBe(true);
   });
 });
 
